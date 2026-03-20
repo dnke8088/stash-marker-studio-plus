@@ -20,7 +20,7 @@ interface MarkerListProps {
   actionMarkers: SceneMarker[];
   onMarkerClick: (marker: SceneMarker) => void;
   onEditMarker: (marker: SceneMarker) => void;
-  onSaveEditWithTagId: (marker: SceneMarker, tagId?: string) => Promise<void>;
+  onSaveEditWithTagId: (marker: SceneMarker, tagId?: string, startSeconds?: number, endSeconds?: number | null) => Promise<void>;
   onCancelEdit: () => void;
   setEditingTagId: (tagId: string) => void;
 }

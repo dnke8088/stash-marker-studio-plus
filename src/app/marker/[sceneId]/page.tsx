@@ -273,15 +273,9 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
   }, []);
 
   const handleSaveEditWithTagId = useCallback(
-    async (marker: SceneMarker, tagId?: string) => {
+    async (marker: SceneMarker, tagId?: string, startSeconds?: number, endSeconds?: number | null) => {
       const finalTagId = tagId || editingTagId;
       if (finalTagId !== marker.primary_tag.id && scene) {
-        console.log("Updating marker tag:", {
-          markerId: marker.id,
-          markerTag: marker.primary_tag.name,
-          oldTagId: marker.primary_tag.id,
-          newTagId: finalTagId,
-        });
         try {
           await dispatch(updateMarkerTag({
             sceneId: scene.id,
@@ -293,6 +287,27 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
           dispatch(setError(`Failed to update marker tag: ${error}`));
         }
       }
+
+      if (scene && (startSeconds !== undefined || endSeconds !== undefined)) {
+        const parsedStart = startSeconds ?? marker.seconds;
+        const parsedEnd = endSeconds !== undefined ? endSeconds : (marker.end_seconds ?? null);
+        const startChanged = parsedStart !== marker.seconds;
+        const endChanged = parsedEnd !== (marker.end_seconds ?? null);
+        if (startChanged || endChanged) {
+          try {
+            await dispatch(updateMarkerTimes({
+              sceneId: scene.id,
+              markerId: marker.id,
+              startTime: parsedStart,
+              endTime: parsedEnd,
+            })).unwrap();
+          } catch (error) {
+            console.error("Error updating marker times:", error);
+            dispatch(setError(`Failed to update marker times: ${error}`));
+          }
+        }
+      }
+
       setEditingMarkerId(null);
       setEditingTagId("");
     },
