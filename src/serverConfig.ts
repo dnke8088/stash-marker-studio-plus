@@ -22,6 +22,7 @@ export interface CompletionDefaults {
   removeCorrespondingTags: boolean;
   deleteRejected?: boolean;
   convertCorrespondingTags?: boolean;
+  switchToNextScene?: boolean;
 }
 
 export interface ServerConfig {
