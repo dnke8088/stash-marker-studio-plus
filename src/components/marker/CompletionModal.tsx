@@ -13,6 +13,7 @@ interface CompletionModalProps {
   tagsToRemove: Tag[];
   rejectedMarkersCount: number;
   correspondingTagsCount: number;
+  hasNextScene: boolean;
   onCancel: () => void;
   onConfirm: (selectedActions: CompletionDefaults) => void;
 }
@@ -26,6 +27,7 @@ export function CompletionModal({
   tagsToRemove,
   rejectedMarkersCount,
   correspondingTagsCount,
+  hasNextScene,
   onCancel,
   onConfirm,
 }: CompletionModalProps) {
@@ -37,6 +39,7 @@ export function CompletionModal({
     removeCorrespondingTags: true,
     deleteRejected: true,
     convertCorrespondingTags: true,
+    switchToNextScene: true,
   });
 
   useEffect(() => {
@@ -60,6 +63,7 @@ export function CompletionModal({
             removeCorrespondingTags: true,
             deleteRejected: true,
             convertCorrespondingTags: true,
+            switchToNextScene: true,
             ...config.completionDefaults,
           });
         }
@@ -267,6 +271,21 @@ export function CompletionModal({
                 )}
               </label>
             </div>
+
+            {hasNextScene && (
+              <div className="flex items-start space-x-3">
+                <input
+                  type="checkbox"
+                  id="switchToNextScene"
+                  checked={selectedActions.switchToNextScene ?? true}
+                  onChange={() => handleActionToggle('switchToNextScene')}
+                  className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                />
+                <label htmlFor="switchToNextScene" className="text-sm text-gray-300 flex-1">
+                  <span className="font-medium">Switch to next scene after completing</span>
+                </label>
+              </div>
+            )}
           </div>
 
           <div className="mt-4 text-xs text-gray-400">
