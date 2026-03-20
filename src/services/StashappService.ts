@@ -870,7 +870,7 @@ export class StashappService {
       input: {
         id: markerId,
         seconds: Math.round(seconds * 1000) / 1000,
-        end_seconds: endSeconds ? Math.round(endSeconds * 1000) / 1000 : null,
+        end_seconds: endSeconds !== null ? Math.round(endSeconds * 1000) / 1000 : null,
       },
     };
 
