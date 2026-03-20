@@ -83,8 +83,7 @@ export function MarkerListItem({
   const handleSaveEdit = () => {
     // Initialize with marker's current start time; overwritten on successful parse.
     // Note: parsedStart <= 0 is blocked by validation. A marker at exactly 0:00.000
-    // will always fail validation — this is an accepted limitation tied to the
-    // service-layer bug workaround (updateMarkerTimes uses a falsy check for end_seconds).
+    // will always fail — editing such a marker's start time is a known limitation.
     let parsedStart: number = marker.seconds;
     let parsedEnd: number | null = null; // null = no end time, explicitly allowed
     let hasError = false;
