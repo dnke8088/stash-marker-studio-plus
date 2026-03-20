@@ -6,6 +6,9 @@ import { formatSeconds, isMarkerConfirmed, isMarkerRejected } from "../../core/m
 import { TagAutocomplete } from "./TagAutocomplete";
 import { TempMarkerForm } from "./TempMarkerForm";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { formatSecondsForInput, parseTimeString } from "../../core/marker/timeFormat";
+import { selectCurrentVideoTime } from "../../store/slices/markerSlice";
+import { useState, useEffect } from "react";
 import {
   setMarkers,
   setSelectedMarkerId,
@@ -56,6 +59,63 @@ export function MarkerListItem({
   const markerStatusRejected = useAppSelector(selectMarkerStatusRejected);
 
   const isEditing = editingMarkerId === marker.id;
+
+  const currentVideoTime = useAppSelector(selectCurrentVideoTime);
+
+  const [startTimeStr, setStartTimeStr] = useState("");
+  const [endTimeStr, setEndTimeStr] = useState("");
+  const [startTimeError, setStartTimeError] = useState(false);
+  const [endTimeError, setEndTimeError] = useState(false);
+
+  // Initialize time strings when entering edit mode
+  useEffect(() => {
+    if (isEditing) {
+      setStartTimeStr(formatSecondsForInput(marker.seconds));
+      setEndTimeStr(marker.end_seconds != null ? formatSecondsForInput(marker.end_seconds) : "");
+      setStartTimeError(false);
+      setEndTimeError(false);
+    }
+  }, [isEditing, marker.seconds, marker.end_seconds]);
+
+  const handleSaveEdit = () => {
+    // Initialize with marker's current start time; overwritten on successful parse.
+    // Note: parsedStart <= 0 is blocked by validation. A marker at exactly 0:00.000
+    // will always fail validation — this is an accepted limitation tied to the
+    // service-layer bug workaround (updateMarkerTimes uses a falsy check for end_seconds).
+    let parsedStart: number = marker.seconds;
+    let parsedEnd: number | null = null; // null = no end time, explicitly allowed
+    let hasError = false;
+
+    try {
+      parsedStart = parseTimeString(startTimeStr);
+      if (parsedStart <= 0) throw new Error("Must be > 0");
+      setStartTimeError(false);
+    } catch {
+      setStartTimeError(true);
+      hasError = true;
+    }
+
+    if (endTimeStr.trim() !== "") {
+      try {
+        parsedEnd = parseTimeString(endTimeStr);
+        if (parsedEnd <= 0) throw new Error("Must be > 0");
+        setEndTimeError(false);
+      } catch {
+        setEndTimeError(true);
+        hasError = true;
+      }
+    }
+
+    if (!hasError && parsedEnd !== null && parsedStart >= parsedEnd) {
+      setStartTimeError(true);
+      hasError = true;
+    }
+
+    if (!hasError) {
+      void onSaveEditWithTagId(marker, editingTagId, parsedStart, parsedEnd);
+    }
+  };
+
   const isSelected = marker.id === selectedMarkerId;
   const isTemp = marker.id === "temp-new" || marker.id === "temp-duplicate";
 
@@ -169,17 +229,67 @@ export function MarkerListItem({
               )}
 
               {isEditing ? (
-                <div className="flex items-center space-x-2 flex-1">
+                <div className="flex items-center gap-2 flex-1 flex-wrap">
+                  {/* Start time */}
+                  <input
+                    type="text"
+                    value={startTimeStr}
+                    onChange={(e) => setStartTimeStr(e.target.value)}
+                    className={`w-24 bg-gray-700 text-white text-xs px-2 py-1 rounded-sm border ${startTimeError ? "border-red-500" : "border-transparent"}`}
+                    placeholder="0:00.000"
+                    aria-label="Start time"
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setStartTimeStr(formatSecondsForInput(currentVideoTime ?? 0)); }}
+                    className="text-xs text-gray-400 hover:text-white px-1"
+                    title="Set start to current time"
+                  >
+                    ▶
+                  </button>
+                  <span className="text-gray-500 text-xs">→</span>
+                  {/* End time */}
+                  <input
+                    type="text"
+                    value={endTimeStr}
+                    onChange={(e) => setEndTimeStr(e.target.value)}
+                    className={`w-24 bg-gray-700 text-white text-xs px-2 py-1 rounded-sm border ${endTimeError ? "border-red-500" : "border-transparent"}`}
+                    placeholder="none"
+                    aria-label="End time"
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setEndTimeStr(formatSecondsForInput(currentVideoTime ?? 0)); }}
+                    className="text-xs text-gray-400 hover:text-white px-1"
+                    title="Set end to current time"
+                  >
+                    ▶
+                  </button>
+                  {/* Tag */}
                   <TagAutocomplete
                     value={editingTagId}
                     onChange={setEditingTagId}
                     availableTags={availableTags}
                     placeholder="Type to search tags..."
-                    className="flex-1"
+                    className="flex-1 min-w-32"
                     autoFocus={isEditing}
-                    onSave={(tagId) => void onSaveEditWithTagId(marker, tagId)}
+                    onSave={() => handleSaveEdit()}
                     onCancel={onCancelEdit}
                   />
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleSaveEdit(); }}
+                    className="text-xs text-gray-300 hover:text-white px-2 py-1 bg-gray-700 rounded"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onCancelEdit(); }}
+                    className="text-xs text-gray-400 hover:text-white px-2 py-1 bg-gray-600 rounded"
+                  >
+                    Cancel
+                  </button>
                 </div>
               ) : (
                 <>
