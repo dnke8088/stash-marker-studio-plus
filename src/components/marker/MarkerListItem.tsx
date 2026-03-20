@@ -67,11 +67,14 @@ export function MarkerListItem({
   const [startTimeError, setStartTimeError] = useState(false);
   const [endTimeError, setEndTimeError] = useState(false);
 
-  // Initialize time strings when entering edit mode
+  // Initialize time strings when entering edit mode; clear errors when leaving
   useEffect(() => {
     if (isEditing) {
       setStartTimeStr(formatSecondsForInput(marker.seconds));
       setEndTimeStr(marker.end_seconds != null ? formatSecondsForInput(marker.end_seconds) : "");
+      setStartTimeError(false);
+      setEndTimeError(false);
+    } else {
       setStartTimeError(false);
       setEndTimeError(false);
     }
@@ -238,6 +241,7 @@ export function MarkerListItem({
                     className={`w-24 bg-gray-700 text-white text-xs px-2 py-1 rounded-sm border ${startTimeError ? "border-red-500" : "border-transparent"}`}
                     placeholder="0:00.000"
                     aria-label="Start time"
+                    title="Format: M:SS.mmm (e.g. 1:23.456). Must be greater than 0."
                   />
                   <button
                     type="button"
