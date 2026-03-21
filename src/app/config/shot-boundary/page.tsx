@@ -271,20 +271,13 @@ export default function ShotBoundaryConfigPage() {
           <div>
             <label className="block text-sm font-medium mb-2">
               AI Tagged ID
-              {formData.enabled && !formData.aiTagged && (
-                <span className="text-red-400 text-xs ml-1">Required</span>
-              )}
             </label>
             <ConfigTagAutocomplete
               value={formData.aiTagged}
               onChange={(tagId) => handleInputChange("aiTagged", tagId)}
               availableTags={availableTags}
               placeholder="Search for AI tagged tag..."
-              className={`w-full p-3 bg-gray-700 border ${
-                formData.enabled && !formData.aiTagged
-                  ? "border-red-500"
-                  : "border-gray-600"
-              } rounded-md focus:border-blue-500 focus:outline-none`}
+              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md focus:border-blue-500 focus:outline-none"
               onTagCreated={async (_newTag) => {
                 // Reload available tags after creating a new tag
                 await dispatch(loadAvailableTags());
