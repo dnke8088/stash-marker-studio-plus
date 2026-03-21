@@ -497,6 +497,9 @@ export default function SearchPage() {
                     <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 p-2 flex justify-around text-xs">
                       {(() => {
                         const stats = calculateMarkerSummary(scene.scene_markers);
+                        const shotCount = scene.scene_markers.filter(
+                          (m) => m.primary_tag.id === stashappService.markerShotBoundary
+                        ).length;
                         return (
                           <>
                             <span className="text-green-400">
@@ -507,6 +510,9 @@ export default function SearchPage() {
                             </span>
                             <span className="text-yellow-400">
                               ? {stats.unknown}
+                            </span>
+                            <span className="text-blue-300" title="Shot boundaries">
+                              🎬 {shotCount}
                             </span>
                           </>
                         );
