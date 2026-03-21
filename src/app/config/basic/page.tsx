@@ -381,7 +381,7 @@ export default function ServerConfigPage() {
       {isInitialSetup && (
         <div className="bg-blue-900 border border-blue-700 p-4 rounded-lg">
           <p className="text-blue-100">
-            Welcome to Stash Marker Studio! Please configure your Stash server
+            Welcome to Stash Marker Studio Plus! Please configure your Stash server
             connection and tag settings to get started.
           </p>
         </div>

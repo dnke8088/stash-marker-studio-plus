@@ -15,7 +15,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Stash Marker Studio",
+  title: "Stash Marker Studio Plus",
   description: "Turbo drive for your Stash markers",
 };
 
