@@ -20,7 +20,7 @@ function validateConfig(config: AppConfig): void {
     throw new Error("Missing serverConfig.url or serverConfig.apiKey in app-config.json");
   }
   if (!shotBoundaryConfig.shotBoundary || !shotBoundaryConfig.sourceShotBoundaryAnalysis || !shotBoundaryConfig.shotBoundaryProcessed) {
-    throw new Error("Missing required shotBoundaryConfig tag IDs in app-config.json");
+    throw new Error("Shot boundary tags are not configured. Go to Settings → Shot Boundary to set them up.");
   }
 }
 
@@ -97,7 +97,7 @@ async function downscaleVideo(inputPath: string, tempDir: string): Promise<strin
   const outputPath = path.join(tempDir, `${randomUUID()}.540p${ext}`);
 
   await new Promise<void>((resolve, reject) => {
-    const ffmpeg = spawn("ffmpeg", [
+    const ffmpeg = spawn("/app/ffmpeg", [
       "-hwaccel", "cuda",
       "-hwaccel_output_format", "cuda",
       "-i", inputPath,
@@ -109,12 +109,15 @@ async function downscaleVideo(inputPath: string, tempDir: string): Promise<strin
       "-b:v", "1M",
       "-an",
       outputPath,
-    ], { stdio: ["ignore", "ignore", "ignore"] });
+    ], { stdio: ["ignore", "ignore", "pipe"] });
+
+    let stderr = "";
+    ffmpeg.stderr.on("data", (d: Buffer) => { stderr += d.toString(); });
 
     ffmpeg.on("error", reject);
     ffmpeg.on("close", (code) => {
       if (code === 0) resolve();
-      else reject(new Error(`ffmpeg exited with code ${code}`));
+      else reject(new Error(`ffmpeg exited with code ${code}: ${stderr.slice(-300)}`));
     });
   });
 
