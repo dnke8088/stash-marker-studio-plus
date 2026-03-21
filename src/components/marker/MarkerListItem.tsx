@@ -276,7 +276,6 @@ export function MarkerListItem({
                     placeholder="Type to search tags..."
                     className="flex-1 min-w-32"
                     autoFocus={isEditing}
-                    onSave={() => handleSaveEdit()}
                     onCancel={onCancelEdit}
                   />
                   <button
