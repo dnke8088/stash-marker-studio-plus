@@ -64,7 +64,7 @@ import {
   seekToTime,
   setError
 } from "../../../store/slices/markerSlice";
-import { selectMarkerShotBoundary, selectMarkerAiReviewed } from "../../../store/slices/configSlice";
+import { selectMarkerShotBoundary, selectMarkerAiReviewed, selectShotBoundaryConfig } from "../../../store/slices/configSlice";
 import Toast from "../../components/Toast";
 import { useRouter } from "next/navigation";
 import { incorrectMarkerStorage } from "@/utils/incorrectMarkerStorage";
@@ -92,6 +92,7 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
   const markers = useAppSelector(selectMarkers);
   const markerShotBoundary = useAppSelector(selectMarkerShotBoundary);
   const markerAiReviewed = useAppSelector(selectMarkerAiReviewed);
+  const shotBoundaryConfig = useAppSelector(selectShotBoundaryConfig);
   const scene = useAppSelector(selectScene);
   const availableTags = useAppSelector(selectAvailableTags);
   const selectedMarkerId = useAppSelector(selectSelectedMarkerId);
@@ -125,6 +126,11 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
       setTimeout(() => setToastState(null), 3000);
     },
     []
+  );
+
+  const [isDetectingShots, setIsDetectingShots] = useState(false);
+  const isShotBoundaryProcessed = !!scene?.tags?.some(
+    (t) => t.id === shotBoundaryConfig.shotBoundaryProcessed
   );
 
   // Get shot boundaries sorted by time
@@ -1100,6 +1106,29 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
     }
   }, [scene, dispatch]);
 
+  const handleDetectShots = useCallback(async () => {
+    if (!scene?.id) return;
+    setIsDetectingShots(true);
+    try {
+      const response = await fetch("/api/shot-boundary/process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sceneId: scene.id }),
+      });
+      const result = await response.json() as { success: boolean; error?: string };
+      if (result.success) {
+        showToast("Shot boundaries detected successfully", "success");
+        await dispatch(loadMarkers(scene.id)).unwrap();
+      } else {
+        showToast(`Shot boundary detection failed: ${result.error ?? "Unknown error"}`, "error");
+      }
+    } catch (err) {
+      showToast(`Shot boundary detection failed: ${err instanceof Error ? err.message : String(err)}`, "error");
+    } finally {
+      setIsDetectingShots(false);
+    }
+  }, [scene, dispatch, showToast]);
+
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <MarkerPageHeader
@@ -1112,6 +1141,9 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
         onOpenCollectModal={() => dispatch(openCollectingModal())}
         onCorrespondingTagConversion={handleCorrespondingTagConversion}
         onComplete={handleComplete}
+        isShotBoundaryProcessed={isShotBoundaryProcessed}
+        isDetectingShots={isDetectingShots}
+        onDetectShots={handleDetectShots}
       />
 
       {error && (
