@@ -528,6 +528,10 @@ export class StashappService {
             paths {
               screenshot
             }
+            tags {
+              id
+              name
+            }
             scene_markers {
               id
               title
