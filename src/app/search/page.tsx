@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -27,6 +27,8 @@ import { calculateMarkerSummary } from "../../core/marker/markerLogic";
 import TagIcon from "@/components/TagIcon";
 import PlusMinusIcon from "@/components/PlusMinusIcon";
 import { navigationPersistence } from "@/utils/navigationPersistence";
+import { selectShotBoundaryConfig } from "@/store/slices/configSlice";
+import Toast from "@/app/components/Toast";
 
 const SORT_OPTIONS = {
   bitrate: "Bit Rate",
@@ -79,6 +81,30 @@ export default function SearchPage() {
   const initializing = useAppSelector(selectInitializing);
   const initializationError = useAppSelector(selectInitializationError);
   const hasSearched = useAppSelector(selectHasSearched);
+  const shotBoundaryConfig = useAppSelector(selectShotBoundaryConfig);
+
+  const [bulkDetect, setBulkDetect] = useState({
+    running: false,
+    current: 0,
+    total: 0,
+  });
+  const cancelRequestedRef = useRef(false);
+
+  // Toast state for bulk detect errors
+  const [bulkToast, setBulkToast] = useState<{ message: string; type: "error" } | null>(null);
+  const showBulkToast = useCallback((message: string) => {
+    setBulkToast({ message, type: "error" });
+    // Toast auto-dismisses after 5s and calls onClose, which sets bulkToast to null
+  }, []);
+
+  const shotBoundaryProcessedId = shotBoundaryConfig.shotBoundaryProcessed;
+  const unprocessedScenes = scenes.filter(
+    (scene) => !scene.tags?.some((t) => t.id === shotBoundaryProcessedId)
+  );
+  const showBulkDetectButton =
+    !!shotBoundaryProcessedId &&
+    scenes.length > 0 &&
+    unprocessedScenes.length > 0;
 
   // Single initialization effect - much cleaner!
   useEffect(() => {
