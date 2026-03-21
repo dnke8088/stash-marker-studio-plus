@@ -2,7 +2,7 @@
 
 ![Stash Marker Studio](stash-marker-studio.png)
 
-> **Enhanced fork** of [stash-marker-studio](https://github.com/skier233/stash-marker-studio) by skier233. Fully compatible with the original workflow, with significant new features added on top.
+> **Enhanced fork** of [stash-marker-studio](https://github.com/MinasukiHikimuna/stash-marker-studio) by MinasukiHikimuna. Fully compatible with the original workflow, with new features added on top.
 
 Stash Marker Studio Plus is a companion app for Stashapp that makes working with video markers and tags much easier. It was mainly designed to support reviewing markers from [Skier's NSFW AI model](https://github.com/skier233/nsfw_ai_model_server) but works with any markers.
 
