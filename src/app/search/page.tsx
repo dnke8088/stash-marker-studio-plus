@@ -103,8 +103,7 @@ export default function SearchPage() {
   );
   const showBulkDetectButton =
     !!shotBoundaryProcessedId &&
-    scenes.length > 0 &&
-    unprocessedScenes.length > 0;
+    scenes.length > 0;
 
   // Single initialization effect - much cleaner!
   useEffect(() => {
@@ -312,7 +311,8 @@ export default function SearchPage() {
             ) : (
               <button
                 onClick={handleBulkDetectShots}
-                className="px-3 py-1.5 text-sm bg-purple-700 text-white rounded hover:bg-purple-600 transition-colors"
+                disabled={unprocessedScenes.length === 0}
+                className="px-3 py-1.5 text-sm bg-purple-700 text-white rounded hover:bg-purple-600 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
               >
                 Detect Shots ({unprocessedScenes.length})
               </button>
