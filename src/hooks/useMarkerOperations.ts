@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
+import { CompletionDefaults } from "../serverConfig";
 import { useAppSelector, useAppDispatch } from "../store/hooks";
 import {
   stashappService,
@@ -28,10 +29,8 @@ import {
   seekToTime,
   setSelectedMarkerId,
 } from "../store/slices/markerSlice";
-import { selectMarkerAiReviewed } from "../store/slices/configSlice";
 import {
   formatSeconds,
-  isMarkerConfirmed,
   isMarkerRejected,
   isShotBoundaryMarker,
   filterUnprocessedMarkers,
@@ -48,7 +47,6 @@ export const useMarkerOperations = (
   const dispatch = useAppDispatch();
   
   // Redux selectors
-  const markerAiReviewed = useAppSelector(selectMarkerAiReviewed);
   const markers = useAppSelector(selectMarkers);
   const scene = useAppSelector(selectScene);
   const availableTags = useAppSelector(selectAvailableTags);
@@ -57,14 +55,6 @@ export const useMarkerOperations = (
   const deleteRejectedModalData = useAppSelector(selectDeleteRejectedModalData);
   const correspondingTagConversionModalData = useAppSelector(selectCorrespondingTagConversionModalData);
   const copiedMarkerTimes = useAppSelector(selectCopiedMarkerTimes);
-
-  // Keep a ref to actionMarkers so async callbacks (executeCompletion) always read
-  // the latest value even if Redux updated mid-execution (e.g. after pre-step B
-  // converts corresponding tags and re-dispatches loadMarkers)
-  const actionMarkersRef = useRef<SceneMarker[]>(actionMarkers);
-  useEffect(() => {
-    actionMarkersRef.current = actionMarkers;
-  }, [actionMarkers]);
 
   // Track the refresh timeout so we can cancel it on unmount (prevents stale dispatch
   // when the user navigates away before the 2s marker-generation delay completes)
@@ -77,11 +67,10 @@ export const useMarkerOperations = (
     };
   }, []);
 
-  // Get action markers helper — reads from ref so async callers always get the
-  // latest value after mid-execution Redux updates (e.g. post pre-step reloads)
+  // Get action markers helper
   const getActionMarkers = useCallback(() => {
-    return actionMarkersRef.current;
-  }, []);
+    return actionMarkers;
+  }, [actionMarkers]);
 
   // Calculate marker summary
   const getMarkerSummary = useCallback(() => {
@@ -452,97 +441,36 @@ export const useMarkerOperations = (
     []
   );
 
-  // Execute the completion process
-  const executeCompletion = useCallback(async (
-    videoCutMarkersToDelete: SceneMarker[],
-    selectedActions: import("../serverConfig").CompletionDefaults
+  // Execute the scene tag update (page 2 of the completion flow).
+  // Receives pre-computed tag lists from the caller — does NOT re-read actionMarkers.
+  const executeSceneTagUpdate = useCallback(async (
+    primaryTagsToAdd: Tag[],
+    tagsToRemove: Tag[],
+    selectedActions: CompletionDefaults
   ) => {
-    const actionMarkers = getActionMarkers();
-    if (!actionMarkers || actionMarkers.length === 0) return;
     if (!scene) return;
 
     try {
-      // Step 1: Delete Video Cut markers (if selected)
-      if (selectedActions.deleteVideoCutMarkers && videoCutMarkersToDelete.length > 0) {
-        console.log("=== Deleting Video Cut Markers ===");
-        console.log(
-          `Deleting ${videoCutMarkersToDelete.length} Video Cut markers`
-        );
-        const videoCutMarkerIds = videoCutMarkersToDelete.map(
-          (marker) => marker.id
-        );
-        await stashappService.deleteMarkers(videoCutMarkerIds);
-        console.log("Video Cut markers deleted successfully");
-        console.log("=== End Video Cut Marker Deletion ===");
-      }
+      if (selectedActions.addPrimaryTags || selectedActions.removeCorrespondingTags) {
+        const tagsToAdd: Tag[] = selectedActions.addPrimaryTags ? primaryTagsToAdd : [];
+        const tagsToActuallyRemove: Tag[] = selectedActions.removeCorrespondingTags ? tagsToRemove : [];
 
-      // Step 2: Generate markers for action markers (if selected)
-      if (selectedActions.generateMarkers) {
-        await stashappService.generateMarkers(scene.id);
-      }
-
-      // Step 3: Update scene tags (if any tag operations are selected)
-      if (selectedActions.addAiReviewedTag || selectedActions.addPrimaryTags || selectedActions.removeCorrespondingTags) {
-        if (!scene) {
-          throw new Error("Scene data not found");
-        }
-
-        // Get all confirmed markers and their primary tags
-        const confirmedMarkers = actionMarkers.filter((marker) =>
-          isMarkerConfirmed(marker)
-        );
-
-        const tagsToAdd = [];
-        
-        // Add AI_Reviewed tag if selected
-        if (selectedActions.addAiReviewedTag) {
-          const aiReviewedTag = {
-            id: markerAiReviewed,
-            name: "AI_Reviewed",
-          };
-          tagsToAdd.push(aiReviewedTag);
-        }
-
-        // Add primary tags from confirmed markers if selected
-        if (selectedActions.addPrimaryTags) {
-          const primaryTags = confirmedMarkers.map((marker) => ({
-            id: marker.primary_tag.id,
-            name: marker.primary_tag.name,
-          }));
-          tagsToAdd.push(...primaryTags);
-        }
-
-        // Remove AI tags from scene if selected
-        const tagsToRemove: Tag[] = selectedActions.removeCorrespondingTags 
-          ? await identifyAITagsToRemove(confirmedMarkers)
-          : [];
-
-        // Update the scene with new tags only if there are changes
-        if (tagsToAdd.length > 0 || tagsToRemove.length > 0) {
-          await stashappService.updateScene(scene, tagsToAdd, tagsToRemove);
+        if (tagsToAdd.length > 0 || tagsToActuallyRemove.length > 0) {
+          await stashappService.updateScene(scene, tagsToAdd, tagsToActuallyRemove);
         }
       }
 
-      // Step 5: Refresh markers to show generated content
-      // Use a ref-tracked timeout so it's cancelled if the component unmounts
-      // (e.g. when "switch to next scene" navigates away before the delay fires)
+      // Refresh markers after generation completes (cancelled on unmount via ref)
       refreshTimeoutRef.current = setTimeout(() => {
         if (scene?.id) dispatch(loadMarkers(scene.id));
-      }, 2000); // Give generation time to complete
+      }, 2000);
 
-      // Clear any existing errors on success
       dispatch(clearError());
     } catch (err) {
-      console.error("Error completing scene:", err);
-      dispatch(setError("Failed to complete scene processing"));
+      console.error("Error updating scene tags:", err);
+      dispatch(setError("Failed to update scene tags"));
     }
-  }, [
-    getActionMarkers,
-    scene,
-    identifyAITagsToRemove,
-    dispatch,
-    markerAiReviewed,
-  ]);
+  }, [scene, dispatch]);
 
   return {
     // Data
@@ -570,6 +498,6 @@ export const useMarkerOperations = (
     
     // Completion operations
     identifyAITagsToRemove,
-    executeCompletion,
+    executeSceneTagUpdate,
   };
 };

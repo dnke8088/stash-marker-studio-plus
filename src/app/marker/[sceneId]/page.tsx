@@ -73,11 +73,9 @@ import {
   formatSeconds,
   isShotBoundaryMarker,
   filterUnprocessedMarkers,
-  getMarkerStatus,
   isMarkerRejected,
   isMarkerConfirmed,
 } from "../../../core/marker/markerLogic";
-import { MarkerStatus } from "../../../core/marker/types";
 
 
 // Add toast state type
@@ -149,6 +147,13 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
 
   // Add state for marker merging
   const [copiedMarkerForMerge, setCopiedMarkerForMerge] = useState<SceneMarker | null>(null);
+
+  // Two-page completion modal state
+  const [completionPage2Data, setCompletionPage2Data] = useState<{
+    primaryTagsToAdd: Tag[];
+    tagsToRemove: Tag[];
+  } | null>(null);
+  const page1SelectionsRef = useRef<import("../../../serverConfig").CompletionDefaults | null>(null);
 
   // Center timeline on playhead function (defined early for use in useTimelineZoom)
   const centerPlayhead = useCallback(() => {
@@ -253,7 +258,7 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
     getMarkerSummary: getMarkerSummaryFromHook,
     checkAllMarkersApproved,
     identifyAITagsToRemove,
-    executeCompletion,
+    executeSceneTagUpdate,
   } = useMarkerOperations(
     actionMarkers,
     getShotBoundaries,
@@ -351,98 +356,32 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
 
     // Get Video Cut markers (shot boundaries) to delete
     const videoCutMarkers = getShotBoundaries();
-    console.log("=== Video Cut Markers to Delete ===");
-    console.log(`Found ${videoCutMarkers.length} Video Cut markers`);
-    videoCutMarkers.forEach((marker, index) => {
-      console.log(
-        `${index + 1}. ID: ${marker.id}, Title: ${
-          marker.title
-        }, Time: ${formatSeconds(marker.seconds, true)} - ${
-          marker.end_seconds ? formatSeconds(marker.end_seconds, true) : "N/A"
-        }, Tag: ${marker.primary_tag.name}`
-      );
-    });
-    console.log("=== End Video Cut Markers ===");
 
-    // Calculate tags to remove and primary tags to add for preview
-    const confirmedMarkers = actionMarkers.filter((marker) =>
-      [MarkerStatus.CONFIRMED].includes(
-        getMarkerStatus(marker)
-      )
-    );
-
-    let tagsToRemove: Tag[] = [];
-    let primaryTagsToAdd: Tag[] = [];
+    // Check if AI_Reviewed tag is already present (for display on page 1)
     let hasAiReviewedTagAlready = false;
-
-    if (confirmedMarkers.length > 0) {
+    if (scene) {
       try {
-        if (!scene) {
-          throw new Error("Scene data not found");
-        }
-        // Get current scene tags to check what's already present
-        const currentSceneTags = await stashappService.getSceneTags(
-          scene.id
-        );
-        const currentSceneTagIds = new Set(
-          currentSceneTags.map((tag) => tag.id)
-        );
-
-        tagsToRemove = await identifyAITagsToRemove(confirmedMarkers);
-
-        // Get unique primary tags from confirmed markers, but only those not already on the scene
-        const uniquePrimaryTagsMap = new Map<
-          string,
-          { id: string; name: string }
-        >();
-        confirmedMarkers.forEach((marker) => {
-          uniquePrimaryTagsMap.set(marker.primary_tag.id, {
-            id: marker.primary_tag.id,
-            name: marker.primary_tag.name,
-          });
-        });
-
-        // Filter to only include tags that aren't already on the scene and sort alphabetically
-        primaryTagsToAdd = Array.from(uniquePrimaryTagsMap.values())
-          .filter((tag) => !currentSceneTagIds.has(tag.id))
-          .sort((a, b) => a.name.localeCompare(b.name));
-
-        // Also check if AI_Reviewed tag is already present
-        const aiReviewedTagId = markerAiReviewed;
-        hasAiReviewedTagAlready = currentSceneTagIds.has(aiReviewedTagId);
-
-        console.log("Current scene tag IDs:", Array.from(currentSceneTagIds));
-        console.log(
-          "All unique primary tags from markers:",
-          Array.from(uniquePrimaryTagsMap.values()).map((t) => t.name)
-        );
-        console.log(
-          "Primary tags to add (new only):",
-          primaryTagsToAdd.map((t) => t.name)
-        );
-        console.log(
-          "AI_Reviewed tag already present:",
-          hasAiReviewedTagAlready
-        );
+        const currentSceneTags = await stashappService.getSceneTags(scene.id);
+        hasAiReviewedTagAlready = currentSceneTags.some(t => t.id === markerAiReviewed);
       } catch (error) {
-        console.error("Error calculating tags for completion:", error);
-        // Continue without tag preview
+        console.error("Error checking AI_Reviewed tag:", error);
       }
     }
 
-    // Open completion modal with all the data
+    // Reset page 2 data so the modal starts on page 1
+    setCompletionPage2Data(null);
+
     dispatch(openCompletionModal({
       warnings,
       videoCutMarkersToDelete: videoCutMarkers,
       hasAiReviewedTag: hasAiReviewedTagAlready,
-      primaryTagsToAdd,
-      tagsToRemove
+      primaryTagsToAdd: [],
+      tagsToRemove: [],
     }));
   }, [
     actionMarkers,
     getShotBoundaries,
     scene,
-    identifyAITagsToRemove,
     markerAiReviewed,
     dispatch,
   ]);
@@ -457,14 +396,34 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
     }
   }, [scene?.id]);
 
-  // executeCompletion now comes from useMarkerOperations hook
-  // Create wrapper function to handle state dependencies
-  const executeCompletionWrapper = useCallback(async (selectedActions: import("../../../serverConfig").CompletionDefaults) => {
+  // Compute fresh tag data after page-1 operations complete
+  const computePage2Data = useCallback(async () => {
+    if (!scene) return { primaryTagsToAdd: [], tagsToRemove: [] };
+    const currentActionMarkers = actionMarkers ?? [];
+    const confirmedMarkers = currentActionMarkers.filter(m => isMarkerConfirmed(m));
+    if (confirmedMarkers.length === 0) return { primaryTagsToAdd: [], tagsToRemove: [] };
+
+    const currentSceneTags = await stashappService.getSceneTags(scene.id);
+    const currentSceneTagIds = new Set(currentSceneTags.map(t => t.id));
+
+    const tagsToRemove = await identifyAITagsToRemove(confirmedMarkers);
+
+    const uniqueTagsMap = new Map<string, Tag>();
+    confirmedMarkers.forEach(m => uniqueTagsMap.set(m.primary_tag.id, { id: m.primary_tag.id, name: m.primary_tag.name }));
+    const primaryTagsToAdd = Array.from(uniqueTagsMap.values())
+      .filter(t => !currentSceneTagIds.has(t.id))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    return { primaryTagsToAdd, tagsToRemove };
+  }, [actionMarkers, scene, identifyAITagsToRemove]);
+
+  // Page 1 of 2: run marker operations, then compute fresh tag data for page 2
+  const handlePage1Confirm = useCallback(async (selectedActions: import("../../../serverConfig").CompletionDefaults) => {
     const modalData = completionModalData;
     if (!modalData) return;
-    dispatch(closeModal());
+    page1SelectionsRef.current = selectedActions;
 
-    // Pre-step A: Delete rejected markers (if selected)
+    // Step A: Delete rejected markers
     if (selectedActions.deleteRejected) {
       const rejected = actionMarkers?.filter(isMarkerRejected) ?? [];
       if (rejected.length > 0) {
@@ -472,37 +431,85 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
           await stashappService.deleteMarkers(rejected.map(m => m.id));
           if (scene?.id) await dispatch(loadMarkers(scene.id)).unwrap();
         } catch (err) {
-          console.error("Error deleting rejected markers during completion:", err);
           dispatch(setError(`Failed to delete rejected markers: ${err}`));
           return;
         }
       }
     }
 
-    // Pre-step B: Convert corresponding tags (if selected)
-    // Note: this intentionally duplicates the logic from handleConfirmCorrespondingTagConversion
-    // in useMarkerOperations — that function relies on pre-fetched Redux modal state, which is
-    // not available here after the modal is closed. Inline duplication is intentional.
+    // Step B: Convert corresponding tags
     if (selectedActions.convertCorrespondingTags) {
-      const currentActionMarkers = actionMarkers ?? [];
       try {
-        const markersToConvert = await stashappService.convertConfirmedMarkersWithCorrespondingTags(currentActionMarkers);
+        const markersToConvert = await stashappService.convertConfirmedMarkersWithCorrespondingTags(actionMarkers ?? []);
         for (const { sourceMarker, correspondingTag } of markersToConvert) {
           await stashappService.updateMarkerTagAndTitle(sourceMarker.id, correspondingTag.id);
         }
         if (scene?.id && markersToConvert.length > 0) await dispatch(loadMarkers(scene.id)).unwrap();
       } catch (err) {
-        console.error("Error converting corresponding tags during completion:", err);
         dispatch(setError(`Failed to convert corresponding tags: ${err}`));
         return;
       }
     }
 
-    await executeCompletion(modalData.videoCutMarkersToDelete, selectedActions);
+    // Step C: Delete Video Cut markers
+    if (selectedActions.deleteVideoCutMarkers && modalData.videoCutMarkersToDelete.length > 0) {
+      try {
+        await stashappService.deleteMarkers(modalData.videoCutMarkersToDelete.map(m => m.id));
+      } catch (err) {
+        dispatch(setError(`Failed to delete video cut markers: ${err}`));
+        return;
+      }
+    }
+
+    // Step D: Generate markers
+    if (selectedActions.generateMarkers && scene?.id) {
+      try {
+        await stashappService.generateMarkers(scene.id);
+      } catch (err) {
+        dispatch(setError(`Failed to generate markers: ${err}`));
+        return;
+      }
+    }
+
+    // Step E: Add AI_Reviewed tag
+    if (selectedActions.addAiReviewedTag && scene) {
+      try {
+        const currentTags = await stashappService.getSceneTags(scene.id);
+        if (!currentTags.some(t => t.id === markerAiReviewed)) {
+          await stashappService.updateScene(scene, [{ id: markerAiReviewed, name: "AI_Reviewed" }], []);
+        }
+      } catch (err) {
+        dispatch(setError(`Failed to add AI_Reviewed tag: ${err}`));
+        return;
+      }
+    }
+
+    // Compute fresh page-2 data from post-operation marker state
+    try {
+      const page2Data = await computePage2Data();
+      setCompletionPage2Data(page2Data);
+    } catch (err) {
+      dispatch(setError(`Failed to compute tag changes: ${err}`));
+    }
+  }, [completionModalData, actionMarkers, scene, markerAiReviewed, dispatch, computePage2Data]);
+
+  // Page 2 of 2: apply scene tag updates
+  const handlePage2Confirm = useCallback(async (selectedActions: import("../../../serverConfig").CompletionDefaults) => {
+    dispatch(closeModal());
+    setCompletionPage2Data(null);
+
+    if (completionPage2Data) {
+      await executeSceneTagUpdate(
+        completionPage2Data.primaryTagsToAdd,
+        completionPage2Data.tagsToRemove,
+        selectedActions
+      );
+    }
+
     if (selectedActions.switchToNextScene && nextSceneId) {
       router.push(`/marker/${nextSceneId}`);
     }
-  }, [executeCompletion, completionModalData, dispatch, actionMarkers, scene, nextSceneId, router]);
+  }, [completionPage2Data, executeSceneTagUpdate, dispatch, nextSceneId, router]);
 
   // Wrapper for keyboard shortcuts - opens completion modal
   const executeCompletionFromKeyboard = useCallback(() => {
@@ -1215,13 +1222,13 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
         completionWarnings={completionModalData?.warnings || []}
         videoCutMarkersToDelete={completionModalData?.videoCutMarkersToDelete || []}
         hasAiReviewedTag={completionModalData?.hasAiReviewedTag || false}
-        primaryTagsToAdd={completionModalData?.primaryTagsToAdd || []}
-        tagsToRemove={completionModalData?.tagsToRemove || []}
         rejectedMarkersCount={actionMarkers?.filter(isMarkerRejected).length ?? 0}
         correspondingTagsCount={actionMarkers?.filter(m => isMarkerConfirmed(m) && (m.primary_tag.description ?? "").toLowerCase().includes("corresponding tag:")).length ?? 0}
         hasNextScene={nextSceneId !== null}
-        onCancel={() => dispatch(closeModal())}
-        onConfirm={executeCompletionWrapper}
+        page2Data={completionPage2Data}
+        onCancel={() => { dispatch(closeModal()); setCompletionPage2Data(null); }}
+        onPage1Confirm={handlePage1Confirm}
+        onPage2Confirm={handlePage2Confirm}
       />
       {isCollectingModalOpen && scene?.id && (
         <IncorrectMarkerCollectionModal

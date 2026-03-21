@@ -4,18 +4,20 @@ import React, { useState, useEffect } from "react";
 import { SceneMarker, Tag } from "../../services/StashappService";
 import { CompletionDefaults } from "../../serverConfig";
 
+type ModalPage = "page1" | "loading" | "page2";
+
 interface CompletionModalProps {
   isOpen: boolean;
   completionWarnings: string[];
   videoCutMarkersToDelete: SceneMarker[];
   hasAiReviewedTag: boolean;
-  primaryTagsToAdd: Tag[];
-  tagsToRemove: Tag[];
   rejectedMarkersCount: number;
   correspondingTagsCount: number;
   hasNextScene: boolean;
+  page2Data: { primaryTagsToAdd: Tag[]; tagsToRemove: Tag[] } | null;
   onCancel: () => void;
-  onConfirm: (selectedActions: CompletionDefaults) => void;
+  onPage1Confirm: (selectedActions: CompletionDefaults) => void;
+  onPage2Confirm: (selectedActions: CompletionDefaults) => void;
 }
 
 export function CompletionModal({
@@ -23,13 +25,13 @@ export function CompletionModal({
   completionWarnings,
   videoCutMarkersToDelete,
   hasAiReviewedTag,
-  primaryTagsToAdd,
-  tagsToRemove,
   rejectedMarkersCount,
   correspondingTagsCount,
   hasNextScene,
+  page2Data,
   onCancel,
-  onConfirm,
+  onPage1Confirm,
+  onPage2Confirm,
 }: CompletionModalProps) {
   const [selectedActions, setSelectedActions] = useState<CompletionDefaults>({
     deleteVideoCutMarkers: true,
@@ -41,17 +43,25 @@ export function CompletionModal({
     convertCorrespondingTags: true,
     switchToNextScene: true,
   });
+  const [currentPage, setCurrentPage] = useState<ModalPage>("page1");
 
   useEffect(() => {
-    // Load defaults from config when modal opens
     if (isOpen) {
+      setCurrentPage("page1");
       loadDefaults();
     }
   }, [isOpen]);
 
+  // Transition from loading to page 2 when page2Data arrives
+  useEffect(() => {
+    if (page2Data !== null && currentPage === "loading") {
+      setCurrentPage("page2");
+    }
+  }, [page2Data, currentPage]);
+
   const loadDefaults = async () => {
     try {
-      const response = await fetch('/api/config');
+      const response = await fetch("/api/config");
       if (response.ok) {
         const config = await response.json();
         if (config.completionDefaults) {
@@ -69,52 +79,218 @@ export function CompletionModal({
         }
       }
     } catch (error) {
-      console.warn('Failed to load completion defaults:', error);
+      console.warn("Failed to load completion defaults:", error);
     }
   };
 
   const saveDefaults = async () => {
     try {
-      const response = await fetch('/api/config');
+      const response = await fetch("/api/config");
       let config = {};
       if (response.ok) {
         config = await response.json();
       }
-      
-      const updatedConfig = {
-        ...config,
-        completionDefaults: selectedActions,
-      };
 
-      await fetch('/api/config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedConfig),
+      await fetch("/api/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...config, completionDefaults: selectedActions }),
       });
     } catch (error) {
-      console.error('Failed to save completion defaults:', error);
+      console.error("Failed to save completion defaults:", error);
     }
   };
 
   const handleActionToggle = (action: keyof CompletionDefaults) => {
-    setSelectedActions(prev => ({
-      ...prev,
-      [action]: !prev[action],
-    }));
+    setSelectedActions((prev) => ({ ...prev, [action]: !prev[action] }));
   };
 
-  const handleConfirm = () => {
-    onConfirm(selectedActions);
+  const handlePage1Next = () => {
+    setCurrentPage("loading");
+    onPage1Confirm(selectedActions);
   };
 
   if (!isOpen) return null;
 
+  // ── Loading page ────────────────────────────────────────────────────────────
+  if (currentPage === "loading") {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-gray-800 p-6 rounded-lg max-w-2xl w-full relative">
+          <h3 className="text-xl font-bold mb-6">Complete Scene Processing</h3>
+          <div className="flex flex-col items-center py-8 text-gray-300">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-white mb-4" />
+            <p>Processing marker operations…</p>
+          </div>
+          <div className="flex justify-end">
+            <button
+              onClick={onCancel}
+              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-sm"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Page 2 ──────────────────────────────────────────────────────────────────
+  if (currentPage === "page2" && page2Data) {
+    const { primaryTagsToAdd, tagsToRemove } = page2Data;
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-gray-800 p-6 rounded-lg max-w-2xl w-full relative">
+          <div className="flex justify-between items-start mb-4">
+            <h3 className="text-xl font-bold">
+              Complete Scene Processing — Step 2 of 2
+            </h3>
+            <button
+              onClick={saveDefaults}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-sm text-sm"
+            >
+              Save as Default
+            </button>
+          </div>
+
+          <div className="mb-4">
+            <p className="mb-3">Select scene tag actions to perform:</p>
+            <div className="space-y-3">
+              <div className="flex items-start space-x-3">
+                <input
+                  type="checkbox"
+                  id="addPrimaryTags"
+                  checked={selectedActions.addPrimaryTags}
+                  onChange={() => handleActionToggle("addPrimaryTags")}
+                  className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                />
+                <label htmlFor="addPrimaryTags" className="text-sm text-gray-300 flex-1">
+                  <span className="font-medium">Add tags from confirmed markers to the scene</span>
+                  {primaryTagsToAdd.length > 0 ? (
+                    <span className="text-green-300">
+                      {" "}({primaryTagsToAdd.length} new tag{primaryTagsToAdd.length !== 1 ? "s" : ""})
+                    </span>
+                  ) : (
+                    <span className="text-gray-400"> (all already present)</span>
+                  )}
+                </label>
+              </div>
+
+              <div className="flex items-start space-x-3">
+                <input
+                  type="checkbox"
+                  id="removeCorrespondingTags"
+                  checked={selectedActions.removeCorrespondingTags}
+                  onChange={() => handleActionToggle("removeCorrespondingTags")}
+                  className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                />
+                <label htmlFor="removeCorrespondingTags" className="text-sm text-gray-300 flex-1">
+                  <span className="font-medium">Remove tags with corresponding tag metadata from the scene</span>
+                  {tagsToRemove.length > 0 ? (
+                    <span className="text-red-300">
+                      {" "}({tagsToRemove.length} tag{tagsToRemove.length !== 1 ? "s" : ""})
+                    </span>
+                  ) : (
+                    <span className="text-gray-500"> (none found)</span>
+                  )}
+                </label>
+              </div>
+
+              {hasNextScene && (
+                <div className="flex items-start space-x-3">
+                  <input
+                    type="checkbox"
+                    id="switchToNextScene"
+                    checked={selectedActions.switchToNextScene ?? true}
+                    onChange={() => handleActionToggle("switchToNextScene")}
+                    className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                  />
+                  <label htmlFor="switchToNextScene" className="text-sm text-gray-300 flex-1">
+                    <span className="font-medium">Switch to next scene after completing</span>
+                  </label>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {primaryTagsToAdd.length > 0 && (
+            <div className="mt-4 p-3 bg-green-900/30 border border-green-600/50 rounded">
+              <h4 className="font-semibold text-green-200 mb-2">
+                ✅ New primary tags from the markers to be added to the scene:
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {primaryTagsToAdd.map((tag) => (
+                  <span
+                    key={`add-${tag.id}`}
+                    className="px-2 py-1 bg-green-800/50 text-green-200 rounded-sm text-xs font-mono"
+                  >
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {primaryTagsToAdd.length === 0 && (
+            <div className="mt-4 p-3 bg-gray-900/30 border border-gray-600/50 rounded">
+              <h4 className="font-semibold text-gray-300 mb-2">ℹ️ No new tags to add</h4>
+              <p className="text-gray-400 text-sm">
+                All primary tags from confirmed markers are already present on the scene.
+              </p>
+            </div>
+          )}
+
+          {tagsToRemove.length > 0 && (
+            <div className="mt-4 p-3 bg-red-900/30 border border-red-600/50 rounded">
+              <h4 className="font-semibold text-red-200 mb-2">🗑️ Tags to be removed from the scene:</h4>
+              <div className="flex flex-wrap gap-2">
+                {tagsToRemove.map((tag) => (
+                  <span
+                    key={`remove-${tag.id}`}
+                    className="px-2 py-1 bg-red-800/50 text-red-200 rounded-sm text-xs font-mono"
+                  >
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-between items-center mt-4">
+            <div className="text-sm text-gray-400">
+              Press{" "}
+              <kbd className="px-1 py-0.5 bg-gray-700 rounded text-xs">Enter</kbd>{" "}
+              to complete,{" "}
+              <kbd className="px-1 py-0.5 bg-gray-700 rounded text-xs">Esc</kbd>{" "}
+              to cancel
+            </div>
+            <div className="flex space-x-4">
+              <button
+                onClick={onCancel}
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => onPage2Confirm(selectedActions)}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-sm font-medium"
+              >
+                Complete
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Page 1 ──────────────────────────────────────────────────────────────────
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-gray-800 p-6 rounded-lg max-w-2xl w-full relative">
         <div className="flex justify-between items-start mb-4">
           <h3 className="text-xl font-bold">
-            Complete Scene Processing
+            Complete Scene Processing — Step 1 of 2
           </h3>
           <button
             onClick={saveDefaults}
@@ -134,20 +310,22 @@ export function CompletionModal({
         )}
 
         <div className="mb-4">
-          <p className="mb-3">Select which actions to perform:</p>
+          <p className="mb-3">Select marker operations to perform:</p>
           <div className="space-y-3">
             <div className="flex items-start space-x-3">
               <input
                 type="checkbox"
                 id="deleteRejected"
                 checked={selectedActions.deleteRejected ?? true}
-                onChange={() => handleActionToggle('deleteRejected')}
+                onChange={() => handleActionToggle("deleteRejected")}
                 className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
               />
               <label htmlFor="deleteRejected" className="text-sm text-gray-300 flex-1">
                 <span className="font-medium">Delete rejected markers</span>
                 {rejectedMarkersCount > 0 ? (
-                  <span className="text-red-300"> ({rejectedMarkersCount} marker{rejectedMarkersCount !== 1 ? "s" : ""})</span>
+                  <span className="text-red-300">
+                    {" "}({rejectedMarkersCount} marker{rejectedMarkersCount !== 1 ? "s" : ""})
+                  </span>
                 ) : (
                   <span className="text-gray-500"> (none)</span>
                 )}
@@ -159,13 +337,15 @@ export function CompletionModal({
                 type="checkbox"
                 id="convertCorrespondingTags"
                 checked={selectedActions.convertCorrespondingTags ?? true}
-                onChange={() => handleActionToggle('convertCorrespondingTags')}
+                onChange={() => handleActionToggle("convertCorrespondingTags")}
                 className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
               />
               <label htmlFor="convertCorrespondingTags" className="text-sm text-gray-300 flex-1">
                 <span className="font-medium">Convert corresponding tags</span>
                 {correspondingTagsCount > 0 ? (
-                  <span className="text-teal-300"> ({correspondingTagsCount} marker{correspondingTagsCount !== 1 ? "s" : ""})</span>
+                  <span className="text-teal-300">
+                    {" "}({correspondingTagsCount} marker{correspondingTagsCount !== 1 ? "s" : ""})
+                  </span>
                 ) : (
                   <span className="text-gray-500"> (none)</span>
                 )}
@@ -177,16 +357,14 @@ export function CompletionModal({
                 type="checkbox"
                 id="deleteVideoCutMarkers"
                 checked={selectedActions.deleteVideoCutMarkers}
-                onChange={() => handleActionToggle('deleteVideoCutMarkers')}
+                onChange={() => handleActionToggle("deleteVideoCutMarkers")}
                 className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
               />
               <label htmlFor="deleteVideoCutMarkers" className="text-sm text-gray-300 flex-1">
                 <span className="font-medium">Delete Video Cut markers</span>
                 {videoCutMarkersToDelete.length > 0 ? (
                   <span className="text-red-300">
-                    {" "}
-                    ({videoCutMarkersToDelete.length} marker
-                    {videoCutMarkersToDelete.length !== 1 ? "s" : ""})
+                    {" "}({videoCutMarkersToDelete.length} marker{videoCutMarkersToDelete.length !== 1 ? "s" : ""})
                   </span>
                 ) : (
                   <span className="text-gray-500"> (none found)</span>
@@ -199,7 +377,7 @@ export function CompletionModal({
                 type="checkbox"
                 id="generateMarkers"
                 checked={selectedActions.generateMarkers}
-                onChange={() => handleActionToggle('generateMarkers')}
+                onChange={() => handleActionToggle("generateMarkers")}
                 className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
               />
               <label htmlFor="generateMarkers" className="text-sm text-gray-300 flex-1">
@@ -212,7 +390,7 @@ export function CompletionModal({
                 type="checkbox"
                 id="addAiReviewedTag"
                 checked={selectedActions.addAiReviewedTag}
-                onChange={() => handleActionToggle('addAiReviewedTag')}
+                onChange={() => handleActionToggle("addAiReviewedTag")}
                 className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
               />
               <label htmlFor="addAiReviewedTag" className="text-sm text-gray-300 flex-1">
@@ -224,134 +402,19 @@ export function CompletionModal({
                 )}
               </label>
             </div>
-
-            <div className="flex items-start space-x-3">
-              <input
-                type="checkbox"
-                id="addPrimaryTags"
-                checked={selectedActions.addPrimaryTags}
-                onChange={() => handleActionToggle('addPrimaryTags')}
-                className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-              />
-              <label htmlFor="addPrimaryTags" className="text-sm text-gray-300 flex-1">
-                <span className="font-medium">Add tags from confirmed markers to the scene</span>
-                {primaryTagsToAdd.length > 0 ? (
-                  <span className="text-green-300">
-                    {" "}
-                    ({primaryTagsToAdd.length} new tag
-                    {primaryTagsToAdd.length !== 1 ? "s" : ""})
-                  </span>
-                ) : (
-                  <span className="text-gray-400">
-                    {" "}
-                    (all already present)
-                  </span>
-                )}
-              </label>
-            </div>
-
-            <div className="flex items-start space-x-3">
-              <input
-                type="checkbox"
-                id="removeCorrespondingTags"
-                checked={selectedActions.removeCorrespondingTags}
-                onChange={() => handleActionToggle('removeCorrespondingTags')}
-                className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-              />
-              <label htmlFor="removeCorrespondingTags" className="text-sm text-gray-300 flex-1">
-                <span className="font-medium">Remove tags with corresponding tag metadata from the scene</span>
-                {tagsToRemove.length > 0 ? (
-                  <span className="text-red-300">
-                    {" "}
-                    ({tagsToRemove.length} tag
-                    {tagsToRemove.length !== 1 ? "s" : ""})
-                  </span>
-                ) : (
-                  <span className="text-gray-500"> (none found)</span>
-                )}
-              </label>
-            </div>
-
-            {hasNextScene && (
-              <div className="flex items-start space-x-3">
-                <input
-                  type="checkbox"
-                  id="switchToNextScene"
-                  checked={selectedActions.switchToNextScene ?? true}
-                  onChange={() => handleActionToggle('switchToNextScene')}
-                  className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                />
-                <label htmlFor="switchToNextScene" className="text-sm text-gray-300 flex-1">
-                  <span className="font-medium">Switch to next scene after completing</span>
-                </label>
-              </div>
-            )}
           </div>
 
           <div className="mt-4 text-xs text-gray-400">
-            Note: Console logging will be provided for detailed information about marker deletion and tag changes.
+            Step 2 will show the scene tag changes after marker operations complete.
           </div>
-
-          {primaryTagsToAdd.length > 0 && (
-            <div className="mt-4 p-3 bg-green-900/30 border border-green-600/50 rounded">
-              <h4 className="font-semibold text-green-200 mb-2">
-                ✅ New primary tags from the markers to be added to the
-                scene:
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {primaryTagsToAdd.map((tag) => (
-                  <span
-                    key={`add-${tag.id}`}
-                    className="px-2 py-1 bg-green-800/50 text-green-200 rounded-sm text-xs font-mono"
-                  >
-                    {tag.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {primaryTagsToAdd.length === 0 && hasAiReviewedTag && (
-            <div className="mt-4 p-3 bg-gray-900/30 border border-gray-600/50 rounded">
-              <h4 className="font-semibold text-gray-300 mb-2">
-                ℹ️ No new tags to add
-              </h4>
-              <p className="text-gray-400 text-sm">
-                All primary tags from confirmed markers and the AI_Reviewed
-                tag are already present on the scene.
-              </p>
-            </div>
-          )}
-
-          {tagsToRemove.length > 0 && (
-            <div className="mt-4 p-3 bg-red-900/30 border border-red-600/50 rounded">
-              <h4 className="font-semibold text-red-200 mb-2">
-                🗑️ Tags to be removed from the scene:
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {tagsToRemove.map((tag) => (
-                  <span
-                    key={`remove-${tag.id}`}
-                    className="px-2 py-1 bg-red-800/50 text-red-200 rounded-sm text-xs font-mono"
-                  >
-                    {tag.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="flex justify-between items-center">
           <div className="text-sm text-gray-400">
             Press{" "}
-            <kbd className="px-1 py-0.5 bg-gray-700 rounded text-xs">
-              Enter
-            </kbd>{" "}
+            <kbd className="px-1 py-0.5 bg-gray-700 rounded text-xs">Enter</kbd>{" "}
             to proceed,{" "}
-            <kbd className="px-1 py-0.5 bg-gray-700 rounded text-xs">
-              Esc
-            </kbd>{" "}
+            <kbd className="px-1 py-0.5 bg-gray-700 rounded text-xs">Esc</kbd>{" "}
             to cancel
           </div>
           <div className="flex space-x-4">
@@ -362,16 +425,14 @@ export function CompletionModal({
               Cancel
             </button>
             <button
-              onClick={handleConfirm}
+              onClick={handlePage1Next}
               className={`px-4 py-2 rounded-sm font-medium ${
                 completionWarnings.length > 0
                   ? "bg-yellow-600 hover:bg-yellow-700 text-white"
-                  : "bg-green-600 hover:bg-green-700 text-white"
+                  : "bg-blue-600 hover:bg-blue-700 text-white"
               }`}
             >
-              {completionWarnings.length > 0
-                ? "Proceed Anyway"
-                : "Complete"}
+              {completionWarnings.length > 0 ? "Proceed Anyway →" : "Next →"}
             </button>
           </div>
         </div>
