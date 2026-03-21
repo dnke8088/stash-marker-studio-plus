@@ -349,8 +349,6 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
 
   // Handle completion button click
   const handleComplete = useCallback(async () => {
-    if (!actionMarkers || actionMarkers.length === 0) return;
-
     const warnings: string[] = [];
 
     // Check if all markers are approved
@@ -528,12 +526,8 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
 
   // Wrapper for keyboard shortcuts - opens completion modal
   const executeCompletionFromKeyboard = useCallback(() => {
-    // Check if we have action markers to complete
-    if (!actionMarkers || actionMarkers.length === 0) return;
-    
-    // Use the existing handleComplete function to open the modal with proper data
     handleComplete();
-  }, [actionMarkers, handleComplete]);
+  }, [handleComplete]);
 
   // Universal marker creation function
   const createOrDuplicateMarker = useCallback(
