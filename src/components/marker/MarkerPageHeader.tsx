@@ -88,18 +88,18 @@ export function MarkerPageHeader({
         <div className="flex items-center space-x-6">
           <div className="flex flex-col min-w-0">
             <div className="flex items-center space-x-3">
-              <h1 className="text-lg font-bold truncate max-w-xl" title={sceneTitle}>
-                {sceneTitle}
-              </h1>
-              {scene && (
+              {scene ? (
                 <a
                   href={`${stashUrl}/scenes/${scene.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-400 hover:text-blue-300 text-sm flex-shrink-0"
+                  title="View in Stash ↗"
+                  className="text-lg font-bold truncate max-w-xl hover:text-blue-300 transition-colors"
                 >
-                  View in Stash ↗
+                  {sceneTitle}
                 </a>
+              ) : (
+                <h1 className="text-lg font-bold truncate max-w-xl">{sceneTitle}</h1>
               )}
             </div>
             {scene && (
