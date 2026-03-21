@@ -93,29 +93,36 @@ async function cleanupTemp(tempDir: string): Promise<void> {
 
 
 async function runSceneDetection(videoPath: string, tempDir: string): Promise<void> {
-  await new Promise<void>((resolve, reject) => {
-    const scenedetect = spawn("scenedetect", [
-      "--input", videoPath,
-      "--output", tempDir,
-      "--backend", "pyav",
-      "detect-content", "--threshold", "20", "--min-scene-len", "2s",
-      "list-scenes",
-    ], { stdio: ["ignore", "pipe", "pipe"] });
+  const runWithBackend = (backend: string): Promise<void> =>
+    new Promise<void>((resolve, reject) => {
+      const scenedetect = spawn("scenedetect", [
+        "--input", videoPath,
+        "--output", tempDir,
+        "--backend", backend,
+        "detect-content", "--threshold", "20", "--min-scene-len", "2s",
+        "list-scenes",
+      ], { stdio: ["ignore", "pipe", "pipe"] });
 
-    let stderr = "";
-    scenedetect.stderr.on("data", (d: Buffer) => { stderr += d.toString(); });
-    // stdout is piped to prevent blocking but we don't need its content
-    scenedetect.stdout.on("data", () => { /* drain */ });
+      let stderr = "";
+      scenedetect.stderr.on("data", (d: Buffer) => { stderr += d.toString(); });
+      scenedetect.stdout.on("data", () => { /* drain */ });
 
-    scenedetect.on("error", reject);
-    scenedetect.on("close", (code) => {
-      if (code === 0 || stderr.includes("UnicodeEncodeError") || stderr.includes("charmap")) {
-        resolve();
-      } else {
-        reject(new Error(`scenedetect exited with code ${code}: ${stderr.slice(-200)}`));
-      }
+      scenedetect.on("error", reject);
+      scenedetect.on("close", (code) => {
+        if (code === 0 || stderr.includes("UnicodeEncodeError") || stderr.includes("charmap")) {
+          resolve();
+        } else {
+          reject(new Error(`scenedetect (${backend}) exited with code ${code}: ${stderr.slice(-200)}`));
+        }
+      });
     });
-  });
+
+  try {
+    await runWithBackend("pyav");
+  } catch {
+    // pyav can fail on videos with corrupt/non-standard encoding; opencv is more tolerant
+    await runWithBackend("opencv");
+  }
 }
 
 async function findAndCopyCSV(tempDir: string, originalVideoPath: string): Promise<string | null> {
