@@ -31,18 +31,20 @@ export function TagAutocomplete({
   const [shouldAutoOpen, setShouldAutoOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const initialClearDone = useRef(false);
 
   // Find the current tag name based on value
   const currentTag = availableTags.find((tag) => tag.id === value);
 
   useEffect(() => {
-    if (currentTag && !autoFocus) {
-      setInputValue(currentTag.name);
-    } else if (autoFocus) {
-      // Clear input when starting inline editing so user can just start typing
+    if (autoFocus && !initialClearDone.current) {
+      // First render in inline-edit mode: clear so user can start typing
       setInputValue("");
-    } else if (!currentTag && !autoFocus) {
-      // Clear input when no tag is selected (value is empty)
+      initialClearDone.current = true;
+    } else if (currentTag) {
+      // Tag was selected: show its name
+      setInputValue(currentTag.name);
+    } else if (!autoFocus) {
       setInputValue("");
     }
   }, [currentTag, autoFocus]);
