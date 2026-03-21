@@ -87,9 +87,13 @@ export function ConfigTagAutocomplete({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (disabled) return;
-    
+
     const newValue = e.target.value;
     setInputValue(newValue);
+    // If user clears the input, clear the selected tag ID too
+    if (!newValue) {
+      onChange("");
+    }
     // Always open when user types
     setIsOpen(true);
     setSelectedIndex(-1);
