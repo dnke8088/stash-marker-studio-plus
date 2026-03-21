@@ -93,10 +93,11 @@ export function MarkerPageHeader({
                   href={`${stashUrl}/scenes/${scene.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  title="View in Stash ↗"
-                  className="text-lg font-bold truncate max-w-xl hover:text-blue-300 transition-colors"
+                  title="View in Stash"
+                  className="group flex items-center gap-1 text-lg font-bold truncate max-w-xl hover:text-blue-300 transition-colors"
                 >
-                  {sceneTitle}
+                  <span className="truncate">{sceneTitle}</span>
+                  <span className="text-gray-500 group-hover:text-blue-300 transition-colors text-sm flex-shrink-0">↗</span>
                 </a>
               ) : (
                 <h1 className="text-lg font-bold truncate max-w-xl">{sceneTitle}</h1>
