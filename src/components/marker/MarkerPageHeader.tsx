@@ -22,6 +22,7 @@ interface MarkerPageHeaderProps {
   onComplete: () => void;
   isShotBoundaryProcessed: boolean;
   isDetectingShots: boolean;
+  detectProgress: number;
   onDetectShots: () => void;
 }
 
@@ -37,6 +38,7 @@ export function MarkerPageHeader({
   onComplete,
   isShotBoundaryProcessed,
   isDetectingShots,
+  detectProgress,
   onDetectShots,
 }: MarkerPageHeaderProps) {
   const router = useRouter();
@@ -146,7 +148,7 @@ export function MarkerPageHeader({
             className="px-3 py-1.5 rounded-sm text-sm transition-colors text-blue-300 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
             title={isShotBoundaryProcessed ? "Re-detect shot boundaries" : "Detect shot boundaries"}
           >
-            {isDetectingShots ? "Detecting…" : isShotBoundaryProcessed ? "Re-detect Shots" : "Detect Shots"}
+            {isDetectingShots ? `Detecting… ${Math.round(detectProgress)}%` : isShotBoundaryProcessed ? "Re-detect Shots" : "Detect Shots"}
           </button>
 
           <button

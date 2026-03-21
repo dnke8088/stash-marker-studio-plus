@@ -129,6 +129,7 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
   );
 
   const [isDetectingShots, setIsDetectingShots] = useState(false);
+  const [detectProgress, setDetectProgress] = useState(0);
   const [localShotBoundaryProcessed, setLocalShotBoundaryProcessed] = useState(false);
   const isShotBoundaryProcessed = localShotBoundaryProcessed || !!scene?.tags?.some(
     (t) => t.id === shotBoundaryConfig.shotBoundaryProcessed
@@ -1114,6 +1115,16 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
   const handleDetectShots = useCallback(async () => {
     if (!scene?.id) return;
     setIsDetectingShots(true);
+    setDetectProgress(0);
+
+    // Animate progress to 90% over estimated duration (ffmpeg + scenedetect ~= 1s per 10s of video)
+    const estimatedMs = Math.max(10000, (videoDuration ?? 60) * 100);
+    const intervalMs = 250;
+    const increment = (90 / (estimatedMs / intervalMs));
+    const timer = setInterval(() => {
+      setDetectProgress(prev => Math.min(90, prev + increment));
+    }, intervalMs);
+
     try {
       const response = await fetch("/api/shot-boundary/process", {
         method: "POST",
@@ -1122,6 +1133,7 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
       });
       const result = await response.json() as { success: boolean; error?: string };
       if (result.success) {
+        setDetectProgress(100);
         showToast("Shot boundaries detected successfully", "success");
         setLocalShotBoundaryProcessed(true);
         await dispatch(loadMarkers(scene.id)).unwrap();
@@ -1131,9 +1143,11 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
     } catch (err) {
       showToast(`Shot boundary detection failed: ${err instanceof Error ? err.message : String(err)}`, "error");
     } finally {
+      clearInterval(timer);
       setIsDetectingShots(false);
+      setDetectProgress(0);
     }
-  }, [scene, dispatch, showToast]);
+  }, [scene, videoDuration, dispatch, showToast]);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
@@ -1149,6 +1163,7 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
         onComplete={handleComplete}
         isShotBoundaryProcessed={isShotBoundaryProcessed}
         isDetectingShots={isDetectingShots}
+        detectProgress={detectProgress}
         onDetectShots={handleDetectShots}
       />
 
