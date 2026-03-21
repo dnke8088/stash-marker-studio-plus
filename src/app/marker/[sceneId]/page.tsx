@@ -499,13 +499,16 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
   }, [completionModalData, actionMarkers, scene, markerAiReviewed, dispatch, computePage2Data]);
 
   // Page 2 of 2: apply scene tag updates
-  const handlePage2Confirm = useCallback(async (selectedActions: import("../../../serverConfig").CompletionDefaults) => {
+  const handlePage2Confirm = useCallback(async (
+    selectedActions: import("../../../serverConfig").CompletionDefaults,
+    primaryTagsToAdd: Tag[]
+  ) => {
     dispatch(closeModal());
     setCompletionPage2Data(null);
 
     if (completionPage2Data) {
       await executeSceneTagUpdate(
-        completionPage2Data.primaryTagsToAdd,
+        primaryTagsToAdd,
         completionPage2Data.tagsToRemove,
         selectedActions
       );

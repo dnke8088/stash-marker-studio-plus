@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { SceneMarker, Tag } from "../../services/StashappService";
+import { SceneMarker, Tag, stashappService } from "../../services/StashappService";
 import { CompletionDefaults } from "../../serverConfig";
 
 type ModalPage = "page1" | "loading" | "page2";
@@ -17,7 +17,7 @@ interface CompletionModalProps {
   page2Data: { primaryTagsToAdd: Tag[]; tagsToRemove: Tag[] } | null;
   onCancel: () => void;
   onPage1Confirm: (selectedActions: CompletionDefaults) => void;
-  onPage2Confirm: (selectedActions: CompletionDefaults) => void;
+  onPage2Confirm: (selectedActions: CompletionDefaults, primaryTagsToAdd: Tag[]) => void;
 }
 
 export function CompletionModal({
@@ -33,6 +33,7 @@ export function CompletionModal({
   onPage1Confirm,
   onPage2Confirm,
 }: CompletionModalProps) {
+  const [manualTagsToAdd, setManualTagsToAdd] = useState<Tag[]>([]);
   const [selectedActions, setSelectedActions] = useState<CompletionDefaults>({
     deleteVideoCutMarkers: true,
     generateMarkers: true,
@@ -48,6 +49,7 @@ export function CompletionModal({
   useEffect(() => {
     if (isOpen) {
       setCurrentPage("page1");
+      setManualTagsToAdd([]);
       loadDefaults();
     }
   }, [isOpen]);
@@ -110,6 +112,33 @@ export function CompletionModal({
     onPage1Confirm(selectedActions);
   };
 
+  const handleRemoveTagClick = async (tag: Tag) => {
+    const desc = tag.description ?? "";
+    if (!desc.toLowerCase().includes("corresponding tag:")) return;
+    const correspondingName = desc.split(/corresponding tag:/i)[1].trim();
+    if (!correspondingName) return;
+
+    const currentPrimaryTagsToAdd = page2Data?.primaryTagsToAdd ?? [];
+    const effectiveList = [
+      ...currentPrimaryTagsToAdd,
+      ...manualTagsToAdd.filter(t => !currentPrimaryTagsToAdd.some(p => p.id === t.id)),
+    ];
+    if (effectiveList.some(t => t.name === correspondingName)) return;
+
+    const lookup = await stashappService.buildCorrespondingTagLookupTable();
+    let resolved: Tag | null = null;
+    const entries = Array.from(lookup.values());
+    for (const entry of entries) {
+      if (entry.correspondingTag?.name === correspondingName) {
+        resolved = entry.correspondingTag;
+        break;
+      }
+    }
+    if (!resolved) return;
+
+    setManualTagsToAdd(prev => [...prev, resolved!]);
+  };
+
   if (!isOpen) return null;
 
   // ── Loading page ────────────────────────────────────────────────────────────
@@ -138,6 +167,10 @@ export function CompletionModal({
   // ── Page 2 ──────────────────────────────────────────────────────────────────
   if (currentPage === "page2" && page2Data) {
     const { primaryTagsToAdd, tagsToRemove } = page2Data;
+    const effectivePrimaryTagsToAdd = [
+      ...primaryTagsToAdd,
+      ...manualTagsToAdd.filter(t => !primaryTagsToAdd.some(p => p.id === t.id)),
+    ];
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-gray-800 p-6 rounded-lg max-w-2xl w-full relative">
@@ -166,9 +199,9 @@ export function CompletionModal({
                 />
                 <label htmlFor="addPrimaryTags" className="text-sm text-gray-300 flex-1">
                   <span className="font-medium">Add tags from confirmed markers to the scene</span>
-                  {primaryTagsToAdd.length > 0 ? (
+                  {effectivePrimaryTagsToAdd.length > 0 ? (
                     <span className="text-green-300">
-                      {" "}({primaryTagsToAdd.length} new tag{primaryTagsToAdd.length !== 1 ? "s" : ""})
+                      {" "}({effectivePrimaryTagsToAdd.length} new tag{effectivePrimaryTagsToAdd.length !== 1 ? "s" : ""})
                     </span>
                   ) : (
                     <span className="text-gray-400"> (all already present)</span>
@@ -213,25 +246,37 @@ export function CompletionModal({
             </div>
           </div>
 
-          {primaryTagsToAdd.length > 0 && (
+          {effectivePrimaryTagsToAdd.length > 0 && (
             <div className="mt-4 p-3 bg-green-900/30 border border-green-600/50 rounded">
               <h4 className="font-semibold text-green-200 mb-2">
                 ✅ New primary tags from the markers to be added to the scene:
               </h4>
               <div className="flex flex-wrap gap-2">
-                {primaryTagsToAdd.map((tag) => (
-                  <span
-                    key={`add-${tag.id}`}
-                    className="px-2 py-1 bg-green-800/50 text-green-200 rounded-sm text-xs font-mono"
-                  >
-                    {tag.name}
-                  </span>
-                ))}
+                {effectivePrimaryTagsToAdd.map((tag) => {
+                  const isManual = manualTagsToAdd.some(m => m.id === tag.id);
+                  return isManual ? (
+                    <button
+                      key={`add-${tag.id}`}
+                      onClick={() => setManualTagsToAdd(prev => prev.filter(m => m.id !== tag.id))}
+                      title="Click to remove"
+                      className="px-2 py-1 bg-teal-800/50 text-teal-200 rounded-sm text-xs font-mono hover:bg-teal-700/70 transition-colors cursor-pointer"
+                    >
+                      {tag.name}
+                    </button>
+                  ) : (
+                    <span
+                      key={`add-${tag.id}`}
+                      className="px-2 py-1 bg-green-800/50 text-green-200 rounded-sm text-xs font-mono"
+                    >
+                      {tag.name}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           )}
 
-          {primaryTagsToAdd.length === 0 && (
+          {effectivePrimaryTagsToAdd.length === 0 && (
             <div className="mt-4 p-3 bg-gray-900/30 border border-gray-600/50 rounded">
               <h4 className="font-semibold text-gray-300 mb-2">ℹ️ No new tags to add</h4>
               <p className="text-gray-400 text-sm">
@@ -244,14 +289,21 @@ export function CompletionModal({
             <div className="mt-4 p-3 bg-red-900/30 border border-red-600/50 rounded">
               <h4 className="font-semibold text-red-200 mb-2">🗑️ Tags to be removed from the scene:</h4>
               <div className="flex flex-wrap gap-2">
-                {tagsToRemove.map((tag) => (
-                  <span
-                    key={`remove-${tag.id}`}
-                    className="px-2 py-1 bg-red-800/50 text-red-200 rounded-sm text-xs font-mono"
-                  >
-                    {tag.name}
-                  </span>
-                ))}
+                {tagsToRemove.map((tag) => {
+                  const hasCorresponding = (tag.description ?? "").toLowerCase().includes("corresponding tag:");
+                  return (
+                    <button
+                      key={`remove-${tag.id}`}
+                      onClick={() => handleRemoveTagClick(tag)}
+                      title={hasCorresponding ? "Click to add corresponding tag to scene" : undefined}
+                      className={`px-2 py-1 bg-red-800/50 text-red-200 rounded-sm text-xs font-mono transition-colors ${
+                        hasCorresponding ? "hover:bg-red-700/70 cursor-pointer" : "cursor-default"
+                      }`}
+                    >
+                      {tag.name}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -272,7 +324,7 @@ export function CompletionModal({
                 Cancel
               </button>
               <button
-                onClick={() => onPage2Confirm(selectedActions)}
+                onClick={() => onPage2Confirm(selectedActions, effectivePrimaryTagsToAdd)}
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-sm font-medium"
               >
                 Complete

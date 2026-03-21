@@ -679,6 +679,7 @@ export class StashappService {
           tags {
             id
             name
+            description
           }
         }
       }
