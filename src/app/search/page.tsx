@@ -512,7 +512,7 @@ export default function SearchPage() {
                               ? {stats.unknown}
                             </span>
                             <span className="text-blue-300" title="Shot boundaries">
-                              🎬 {shotCount}
+                              🎥 {shotCount}
                             </span>
                           </>
                         );
