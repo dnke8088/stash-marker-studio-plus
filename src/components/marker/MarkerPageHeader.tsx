@@ -74,23 +74,53 @@ export function MarkerPageHeader({
     action();
   }, []);
 
+  const sceneTitle = scene
+    ? scene.title || scene.files?.[0]?.basename || scene.id
+    : "Scene Markers";
+
+  const starRating = scene?.rating100 != null
+    ? Math.round(scene.rating100 / 20)
+    : null;
+
   return (
-    <div className="bg-gray-900 text-white px-6 py-4 border-b border-gray-700 flex-shrink-0">
+    <div className="bg-gray-900 text-white px-6 py-3 border-b border-gray-700 flex-shrink-0">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-6">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-bold">
-              {scene ? scene.title : "Scene Markers"}
-            </h1>
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center space-x-3">
+              <h1 className="text-lg font-bold truncate max-w-xl" title={sceneTitle}>
+                {sceneTitle}
+              </h1>
+              {scene && (
+                <a
+                  href={`${stashUrl}/scenes/${scene.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 text-sm flex-shrink-0"
+                >
+                  View in Stash ↗
+                </a>
+              )}
+            </div>
             {scene && (
-              <a
-                href={`${stashUrl}/scenes/${scene.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 text-sm"
-              >
-                View in Stash ↗
-              </a>
+              <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
+                {scene.studio && (
+                  <span className="text-gray-300 font-medium">{scene.studio.name}</span>
+                )}
+                {starRating !== null && (
+                  <span className="tracking-tight" title={`${scene.rating100}/100`}>
+                    {Array.from({ length: 5 }, (_, i) =>
+                      i < starRating ? "★" : "☆"
+                    ).join("")}
+                  </span>
+                )}
+                {scene.play_count != null && scene.play_count > 0 && (
+                  <span title="Play count">👁 {scene.play_count}</span>
+                )}
+                {scene.o_counter != null && scene.o_counter > 0 && (
+                  <span title="O-counter">💦 {scene.o_counter}</span>
+                )}
+              </div>
             )}
           </div>
           <div className="flex items-center space-x-2">

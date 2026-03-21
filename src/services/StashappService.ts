@@ -41,6 +41,10 @@ type SceneMarkersResponse = {
 export type Scene = {
   id: string;
   title: string;
+  rating100?: number | null;
+  play_count?: number | null;
+  o_counter?: number | null;
+  studio?: { id: string; name: string } | null;
   paths: {
     preview: string;
     vtt?: string;
@@ -640,6 +644,13 @@ export class StashappService {
         findScene(id: $id) {
           id
           title
+          rating100
+          play_count
+          o_counter
+          studio {
+            id
+            name
+          }
           paths {
             preview
             vtt
