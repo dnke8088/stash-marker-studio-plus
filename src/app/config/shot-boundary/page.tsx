@@ -94,6 +94,11 @@ export default function ShotBoundaryConfigPage() {
   };
 
   const handleSave = async () => {
+    if (formData.enabled && (!formData.shotBoundary || !formData.sourceShotBoundaryAnalysis || !formData.shotBoundaryProcessed)) {
+      setMessage("Error: Shot Boundary Tag ID, Source Detection Tag ID, and Processed Tag ID are required when shot boundary detection is enabled.");
+      return;
+    }
+
     setIsSaving(true);
     setMessage("");
 
