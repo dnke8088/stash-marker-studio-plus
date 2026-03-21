@@ -27,6 +27,7 @@ export default function ShotBoundaryConfigPage() {
   const availableTags = useAppSelector(selectAvailableTags);
 
   const [formData, setFormData] = useState({
+    enabled: false,
     shotBoundary: "",
     sourceShotBoundaryAnalysis: "",
     aiTagged: "",

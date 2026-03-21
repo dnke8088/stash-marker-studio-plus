@@ -39,6 +39,7 @@ const initialState: ConfigState = {
     markerGroupParent: '',
   },
   shotBoundaryConfig: {
+    enabled: false,
     aiTagged: '',
     shotBoundary: '',
     sourceShotBoundaryAnalysis: '',
@@ -134,19 +135,24 @@ const configSlice = createSlice({
   initialState,
   reducers: {
     setFullConfig: (state, action: PayloadAction<AppConfig>) => {
-      const markerGroups = state.markerGroups; // Preserve marker groups state
-      return { ...action.payload, isLoaded: true, markerGroups };
+      const markerGroups = state.markerGroups;
+      const loaded = { ...action.payload, isLoaded: true, markerGroups };
+      if (loaded.shotBoundaryConfig) {
+        loaded.shotBoundaryConfig.enabled = loaded.shotBoundaryConfig.enabled ?? false;
+      }
+      return loaded;
     },
     setMarkerGroupingConfig: (state, action: PayloadAction<{ markerGroupParent: string }>) => {
       state.markerGroupingConfig = action.payload;
       // Clear marker groups when parent changes
       state.markerGroups.tags = [];
     },
-    setShotBoundaryConfig: (state, action: PayloadAction<{ 
-      aiTagged: string; 
-      shotBoundary: string; 
-      sourceShotBoundaryAnalysis: string; 
-      shotBoundaryProcessed: string; 
+    setShotBoundaryConfig: (state, action: PayloadAction<{
+      enabled: boolean;
+      aiTagged: string;
+      shotBoundary: string;
+      sourceShotBoundaryAnalysis: string;
+      shotBoundaryProcessed: string;
     }>) => {
       state.shotBoundaryConfig = action.payload;
     },
@@ -193,6 +199,8 @@ export const selectServerConfig = (state: { config: ConfigState }) => state.conf
 export const selectMarkerConfig = (state: { config: ConfigState }) => state.config.markerConfig;
 export const selectMarkerGroupingConfig = (state: { config: ConfigState }) => state.config.markerGroupingConfig;
 export const selectShotBoundaryConfig = (state: { config: ConfigState }) => state.config.shotBoundaryConfig;
+export const selectShotBoundaryEnabled = (state: { config: ConfigState }) =>
+  state.config.shotBoundaryConfig.enabled ?? false;
 export const selectVideoPlaybackConfig = (state: { config: ConfigState }) => state.config.videoPlaybackConfig;
 
 // Marker groups selectors
