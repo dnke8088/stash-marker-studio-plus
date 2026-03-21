@@ -219,6 +219,47 @@ export default function SearchPage() {
     navigationPersistence.storePreviousPage(currentPath, 'Scene Search');
   }, []);
 
+  const handleBulkDetectShots = useCallback(async () => {
+    const scenesToProcess = scenes.filter(
+      (scene) => !scene.tags?.some((t) => t.id === shotBoundaryProcessedId)
+    );
+    if (scenesToProcess.length === 0) return;
+
+    cancelRequestedRef.current = false;
+    setBulkDetect({ running: true, current: 1, total: scenesToProcess.length });
+
+    for (let i = 0; i < scenesToProcess.length; i++) {
+      if (cancelRequestedRef.current) break;
+
+      setBulkDetect((prev) => ({ ...prev, current: i + 1 }));
+
+      const scene = scenesToProcess[i];
+      try {
+        const response = await fetch("/api/shot-boundary/process", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sceneId: scene.id }),
+        });
+        const data = await response.json() as { success: boolean; error?: string };
+        if (!data.success) {
+          const title = scene.title ?? scene.files?.[0]?.basename ?? scene.id;
+          showBulkToast(`Shot detection failed for ${title}: ${data.error ?? "Unknown error"}`);
+        }
+      } catch (err) {
+        const title = scene.title ?? scene.files?.[0]?.basename ?? scene.id;
+        const message = err instanceof Error ? err.message : String(err);
+        showBulkToast(`Shot detection failed for ${title}: ${message}`);
+      }
+    }
+
+    setBulkDetect({ running: false, current: 0, total: 0 });
+    dispatch(searchScenes({ query, selectedTags, sortField, sortDirection }));
+  }, [scenes, shotBoundaryProcessedId, showBulkToast, dispatch, query, selectedTags, sortField, sortDirection]);
+
+  const handleCancelBulkDetect = useCallback(() => {
+    cancelRequestedRef.current = true;
+  }, []);
+
   // Show loading state during initialization
   if (initializing) {
     return (
