@@ -27,7 +27,7 @@ import { calculateMarkerSummary } from "../../core/marker/markerLogic";
 import TagIcon from "@/components/TagIcon";
 import PlusMinusIcon from "@/components/PlusMinusIcon";
 import { navigationPersistence } from "@/utils/navigationPersistence";
-import { selectShotBoundaryConfig } from "@/store/slices/configSlice";
+import { selectShotBoundaryConfig, selectShotBoundaryEnabled } from "@/store/slices/configSlice";
 import Toast from "@/app/components/Toast";
 
 const SORT_OPTIONS = {
@@ -82,6 +82,7 @@ export default function SearchPage() {
   const initializationError = useAppSelector(selectInitializationError);
   const hasSearched = useAppSelector(selectHasSearched);
   const shotBoundaryConfig = useAppSelector(selectShotBoundaryConfig);
+  const shotBoundaryEnabled = useAppSelector(selectShotBoundaryEnabled);
 
   const [bulkDetect, setBulkDetect] = useState({
     running: false,
@@ -102,6 +103,7 @@ export default function SearchPage() {
     (scene) => !scene.tags?.some((t) => t.id === shotBoundaryProcessedId)
   );
   const showBulkDetectButton =
+    shotBoundaryEnabled &&
     !!shotBoundaryProcessedId &&
     scenes.length > 0;
 
@@ -511,9 +513,11 @@ export default function SearchPage() {
                             <span className="text-yellow-400">
                               ? {stats.unknown}
                             </span>
-                            <span className="text-blue-300" title="Shot boundaries">
-                              🎥 {shotCount}
-                            </span>
+                            {shotBoundaryEnabled && (
+                              <span className="text-blue-300" title="Shot boundaries">
+                                🎥 {shotCount}
+                              </span>
+                            )}
                           </>
                         );
                       })()}
