@@ -44,7 +44,7 @@ export default function ShotBoundaryConfigPage() {
 
   // Load current config into form
   useEffect(() => {
-    setFormData(shotBoundaryConfig);
+    setFormData({ ...shotBoundaryConfig, enabled: shotBoundaryConfig.enabled ?? false });
   }, [shotBoundaryConfig]);
 
   // Load tags when server config is available
@@ -87,6 +87,10 @@ export default function ShotBoundaryConfigPage() {
       ...prev,
       [field]: value,
     }));
+  };
+
+  const handleToggleChange = (field: string, value: boolean) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSave = async () => {
@@ -187,22 +191,46 @@ export default function ShotBoundaryConfigPage() {
         <div className="mb-6">
           <h2 className="text-xl font-semibold mb-2">Shot Boundary Detection</h2>
           <p className="text-gray-400 text-sm">
-            Configure tags and settings for PySceneDetect shot boundary analysis. 
+            Configure tags and settings for PySceneDetect shot boundary analysis.
             This feature automatically detects scene changes and creates markers at shot boundaries.
           </p>
         </div>
 
+        {/* Enable toggle */}
+        <div className="flex items-center gap-3 mb-6">
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.enabled}
+              onChange={(e) => handleToggleChange("enabled", e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+          <span className="text-sm font-medium text-white">
+            Enable Shot Boundary Detection
+          </span>
+        </div>
+
+        <div className={!formData.enabled ? "opacity-50 pointer-events-none" : ""}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-2">
               Shot Boundary Tag ID
+              {formData.enabled && !formData.shotBoundary && (
+                <span className="text-red-400 text-xs ml-1">Required</span>
+              )}
             </label>
             <ConfigTagAutocomplete
               value={formData.shotBoundary}
               onChange={(tagId) => handleInputChange("shotBoundary", tagId)}
               availableTags={availableTags}
               placeholder="Search for shot boundary tag..."
-              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md focus:border-blue-500 focus:outline-none"
+              className={`w-full p-3 bg-gray-700 border ${
+                formData.enabled && !formData.shotBoundary
+                  ? "border-red-500"
+                  : "border-gray-600"
+              } rounded-md focus:border-blue-500 focus:outline-none`}
               onTagCreated={async (_newTag) => {
                 // Reload available tags after creating a new tag
                 await dispatch(loadAvailableTags());
@@ -215,6 +243,9 @@ export default function ShotBoundaryConfigPage() {
           <div>
             <label className="block text-sm font-medium mb-2">
               Source Detection Tag ID
+              {formData.enabled && !formData.sourceShotBoundaryAnalysis && (
+                <span className="text-red-400 text-xs ml-1">Required</span>
+              )}
             </label>
             <ConfigTagAutocomplete
               value={formData.sourceShotBoundaryAnalysis}
@@ -223,7 +254,11 @@ export default function ShotBoundaryConfigPage() {
               }
               availableTags={availableTags}
               placeholder="Search for source detection tag..."
-              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md focus:border-blue-500 focus:outline-none"
+              className={`w-full p-3 bg-gray-700 border ${
+                formData.enabled && !formData.sourceShotBoundaryAnalysis
+                  ? "border-red-500"
+                  : "border-gray-600"
+              } rounded-md focus:border-blue-500 focus:outline-none`}
               onTagCreated={async (_newTag) => {
                 // Reload available tags after creating a new tag
                 await dispatch(loadAvailableTags());
@@ -236,13 +271,20 @@ export default function ShotBoundaryConfigPage() {
           <div>
             <label className="block text-sm font-medium mb-2">
               AI Tagged ID
+              {formData.enabled && !formData.aiTagged && (
+                <span className="text-red-400 text-xs ml-1">Required</span>
+              )}
             </label>
             <ConfigTagAutocomplete
               value={formData.aiTagged}
               onChange={(tagId) => handleInputChange("aiTagged", tagId)}
               availableTags={availableTags}
               placeholder="Search for AI tagged tag..."
-              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md focus:border-blue-500 focus:outline-none"
+              className={`w-full p-3 bg-gray-700 border ${
+                formData.enabled && !formData.aiTagged
+                  ? "border-red-500"
+                  : "border-gray-600"
+              } rounded-md focus:border-blue-500 focus:outline-none`}
               onTagCreated={async (_newTag) => {
                 // Reload available tags after creating a new tag
                 await dispatch(loadAvailableTags());
@@ -255,6 +297,9 @@ export default function ShotBoundaryConfigPage() {
           <div>
             <label className="block text-sm font-medium mb-2">
               Processed Tag ID
+              {formData.enabled && !formData.shotBoundaryProcessed && (
+                <span className="text-red-400 text-xs ml-1">Required</span>
+              )}
             </label>
             <ConfigTagAutocomplete
               value={formData.shotBoundaryProcessed}
@@ -263,7 +308,11 @@ export default function ShotBoundaryConfigPage() {
               }
               availableTags={availableTags}
               placeholder="Search for processed tag..."
-              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md focus:border-blue-500 focus:outline-none"
+              className={`w-full p-3 bg-gray-700 border ${
+                formData.enabled && !formData.shotBoundaryProcessed
+                  ? "border-red-500"
+                  : "border-gray-600"
+              } rounded-md focus:border-blue-500 focus:outline-none`}
               onTagCreated={async (_newTag) => {
                 // Reload available tags after creating a new tag
                 await dispatch(loadAvailableTags());
@@ -273,6 +322,7 @@ export default function ShotBoundaryConfigPage() {
               Tag applied to scenes after shot boundary processing is complete
             </p>
           </div>
+        </div>
         </div>
 
         {/* System Requirements */}
