@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/store/hooks";
 import { selectStashUrl } from "@/store/slices/configSlice";
@@ -35,40 +35,44 @@ export function MarkerPageHeader({
 }: MarkerPageHeaderProps) {
   const router = useRouter();
   const stashUrl = useAppSelector(selectStashUrl);
-  
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
   // Calculate counts for button display
   const rejectedMarkersCount = markers?.filter(isMarkerRejected).length || 0;
-  
-  // Count confirmed markers that have corresponding tag metadata (simplified check)
+
+  // Count confirmed markers that have corresponding tag metadata
   const correspondingTagsCount = markers?.filter(marker => {
     const isConfirmed = isMarkerConfirmed(marker);
-    // Check if primary tag description contains "Corresponding Tag:" (case insensitive)
     const description = marker.primary_tag.description || '';
-    const hasCorrespondingTag = description.toLowerCase().includes('corresponding tag:');
-    
-    return isConfirmed && hasCorrespondingTag;
+    return isConfirmed && description.toLowerCase().includes('corresponding tag:');
   }).length || 0;
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleSwitchScene = useCallback(() => {
     router.push("/search");
   }, [router]);
 
   const handleSettingsClick = useCallback(() => {
-    // Store current page before navigating to settings
     const currentPath = window.location.pathname + window.location.search;
     const title = scene ? `Marker Review - ${scene.title}` : 'Marker Review';
     navigationPersistence.storePreviousPage(currentPath, title);
   }, [scene]);
 
-  const handleDeleteRejectedClick = useCallback(() => {
-    // Always open the modal - it will show empty state if no rejected markers
-    onDeleteRejected();
-  }, [onDeleteRejected]);
-
-  const handleCollectFeedbackClick = useCallback(() => {
-    // Always open the modal - it will show empty state if no incorrect markers
-    onOpenCollectModal();
-  }, [onOpenCollectModal]);
+  const handleMenuAction = useCallback((action: () => void) => {
+    setMenuOpen(false);
+    action();
+  }, []);
 
   return (
     <div className="bg-gray-900 text-white px-6 py-4 border-b border-gray-700 flex-shrink-0">
@@ -93,46 +97,9 @@ export function MarkerPageHeader({
             <button
               onClick={handleSwitchScene}
               className="bg-blue-500 hover:bg-blue-700 text-white px-3 py-1.5 rounded-sm text-sm transition-colors"
-              title="Switch to a different scene"
+              title="Return to scene search"
             >
-              Switch Scene
-            </button>
-            <button
-              onClick={handleDeleteRejectedClick}
-              disabled={isLoading}
-              title="Delete All Rejected Markers"
-              className={`px-3 py-1.5 rounded-sm text-sm transition-colors ${
-                rejectedMarkersCount > 0
-                  ? "bg-red-500 hover:bg-red-700 text-white"
-                  : "bg-gray-600 hover:bg-gray-500 text-white"
-              } disabled:bg-gray-600 disabled:cursor-not-allowed`}
-            >
-              Delete Rejected{" "}
-              {rejectedMarkersCount > 0 && `(${rejectedMarkersCount})`}
-            </button>
-            <button
-              onClick={handleCollectFeedbackClick}
-              className={`px-3 py-1.5 rounded-sm text-sm font-medium transition-colors
-                ${
-                  incorrectMarkers.length > 0
-                    ? "bg-purple-600 hover:bg-purple-700"
-                    : "bg-gray-600 hover:bg-gray-500"
-                } text-white`}
-            >
-              Collect AI Feedback{" "}
-              {incorrectMarkers.length > 0 &&
-                `(${incorrectMarkers.length})`}
-            </button>
-            <button
-              onClick={onCorrespondingTagConversion}
-              className={`px-3 py-1.5 rounded-sm text-sm transition-colors ${
-                correspondingTagsCount > 0
-                  ? "bg-teal-600 hover:bg-teal-700 text-white"
-                  : "bg-gray-600 hover:bg-gray-500 text-white"
-              }`}
-            >
-              Convert Corresponding Tags{" "}
-              {correspondingTagsCount > 0 && `(${correspondingTagsCount})`}
+              ← Back to Search
             </button>
             <button
               onClick={onComplete}
@@ -150,6 +117,70 @@ export function MarkerPageHeader({
             >
               {!checkAllMarkersApproved() ? "⚠️ Complete" : "Complete"}
             </button>
+
+            {/* More actions dropdown */}
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => setMenuOpen(prev => !prev)}
+                className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded-sm text-sm transition-colors flex items-center space-x-1"
+                title="More actions"
+              >
+                <span>More</span>
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {menuOpen && (
+                <div className="absolute right-0 mt-1 w-56 bg-gray-800 border border-gray-600 rounded shadow-lg z-50">
+                  <button
+                    onClick={() => handleMenuAction(onDeleteRejected)}
+                    disabled={isLoading}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between ${
+                      rejectedMarkersCount > 0
+                        ? "text-red-300 hover:bg-gray-700"
+                        : "text-gray-400 hover:bg-gray-700"
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    <span>Delete Rejected</span>
+                    {rejectedMarkersCount > 0 && (
+                      <span className="bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+                        {rejectedMarkersCount}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleMenuAction(onOpenCollectModal)}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between ${
+                      incorrectMarkers.length > 0
+                        ? "text-purple-300 hover:bg-gray-700"
+                        : "text-gray-400 hover:bg-gray-700"
+                    }`}
+                  >
+                    <span>Collect AI Feedback</span>
+                    {incorrectMarkers.length > 0 && (
+                      <span className="bg-purple-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+                        {incorrectMarkers.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleMenuAction(onCorrespondingTagConversion)}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between ${
+                      correspondingTagsCount > 0
+                        ? "text-teal-300 hover:bg-gray-700"
+                        : "text-gray-400 hover:bg-gray-700"
+                    }`}
+                  >
+                    <span>Convert Corresponding Tags</span>
+                    {correspondingTagsCount > 0 && (
+                      <span className="bg-teal-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+                        {correspondingTagsCount}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex items-center">
