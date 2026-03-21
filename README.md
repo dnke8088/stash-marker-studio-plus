@@ -1,248 +1,216 @@
-# Stash Marker Studio
+# Stash Marker Studio Plus
 
 ![Stash Marker Studio](stash-marker-studio.png)
 
-Stash Marker Studio is a companion app for Stashapp and makes working with markers and tags much easier. It was mainly designed to support using [Skier's NSFW AI model](https://github.com/skier233/nsfw_ai_model_server) but it works with any markers.
+> **Enhanced fork** of [stash-marker-studio](https://github.com/skier233/stash-marker-studio) by skier233. Fully compatible with the original workflow, with significant new features added on top.
 
-To reliably use tools like Skier's NSFW AI model or marker sources such as TPDB or timestamp.trade, there needs to be some kind of review. The opinionated approach of Stash Marker Studio is as follows:
+Stash Marker Studio Plus is a companion app for Stashapp that makes working with video markers and tags much easier. It was mainly designed to support reviewing markers from [Skier's NSFW AI model](https://github.com/skier233/nsfw_ai_model_server) but works with any markers.
+
+The core workflow:
 
 - Markers always have a single, actual tag stored as primary tag.
-- Additional tags of markers are used only for metadata such as is the marker confirmed or rejected or what is the source for that marker.
-- When a scene is reviewed, user will confirm or reject the markers on the scene. Rejected markers can be easily deleted.
-- After review is completed, all tags with corresponding tag metadata from a scene and its markers will be removed and only the tags from the confirmed markers will be saved. Tags which were previously present on a scene and did not originate from any of the markers will not be touched.
+- Additional tags on markers are used only for metadata (confirmed, rejected, source).
+- During review, confirm or reject markers using keyboard shortcuts. Rejected markers can be bulk-deleted.
+- On completion, all AI/placeholder tags are removed and only confirmed markers' tags are saved to the scene. Pre-existing tags not originating from markers are left untouched.
 
-Stash Marker Studio also optionally supports PySceneDetect which will analyze the video stream, detect shot boundaries and use those for easier navigating when reviewing and finetuning the markers.
-
-Stash Marker Studio is heavily centered around keyboard use and many functionalities are only available using those. You can click on i icon to see the full list. The guiding principle is that left hand is used for modifying actions and right hand is used for navigating within the scene.
+The app is heavily keyboard-driven — many features are only accessible via keyboard shortcuts. Left hand modifies, right hand navigates.
 
 ![Keyboard shortcuts](stash-marker-keyboard-shortcuts.png)
 
-## Navigation and Workflow
+---
+
+## What's New in Plus
+
+These features are additions beyond the original stash-marker-studio:
+
+### In-App Shot Boundary Detection
+PySceneDetect now runs directly inside the app — no external script required. A **Detect Shots** button in the scene header triggers detection on the current scene, creates shot boundary markers automatically, and tags the scene when complete. If shot boundary markers already exist, the button reads **Re-detect Shots** and removes old ones before creating new ones.
+
+### Inline Marker Time Editing
+Edit marker start and end times directly in the marker list. Set either time to the current video position with a single button press. Tag assignment is also integrated into the edit row.
+
+### Completion Modal with Tag Preview
+A two-page completion modal shows exactly which tags will be added to and removed from the scene before committing. Page 2 includes manual tag search (autocomplete for any non-AI Stash tag) and lets you remove manually added tags before finalising.
+
+### Next Scene Navigation
+After completing a scene, navigate directly to the next unreviewed scene from your session list — no need to return to the search page.
+
+### Scene Metadata in Header
+The scene header now shows studio name, star rating, play count, and O-counter at a glance. The scene title is a clickable link that opens the scene in Stashapp in a new tab.
+
+### Advanced Marker Operations
+- **Duplicate** a marker
+- **Split** a marker at the current playhead position
+- **Split shot boundary** markers
+- **Copy/paste** timing data between markers
+- **Merge** properties from one marker into another
+
+### Dynamic Keyboard Shortcuts
+Keyboard shortcuts are configurable in settings. The shortcut modal groups shortcuts by left-hand (modify) and right-hand (navigate) for quick reference.
+
+### Reliability & Architecture
+Full Redux Toolkit migration for all marker state management. Navigation uses marker IDs for reliable selection. Toasts and modals no longer render underneath timeline markers.
+
+---
+
+## Full Feature Overview
 
 ### Timeline Navigation
 
-The application provides comprehensive keyboard-driven navigation through the timeline:
+**Swimlane Navigation**: Move between marker categories using arrow keys. Navigation follows the visual swimlane order top to bottom and stops at boundaries without wrapping.
 
-**Swimlane Navigation**: Move between different marker categories using arrow keys. Navigation follows the visual swimlane order from top to bottom, and stops at boundaries without wrapping around.
+**Timeline Zoom**: Adjust temporal resolution for detailed or broad views. Zoom maintains the playhead as focal point with min/max limits.
 
-**Timeline Zoom**: Adjust the temporal resolution for detailed work or broader context. Zoom operations maintain the playhead position as the focal point, with minimum and maximum limits to prevent excessive scaling.
+**Playhead-Based Selection**: Automatically selects markers based on current video position. Updates as the video plays.
 
-**Playhead-Based Selection**: Automatically select markers based on the current video position. The system searches forward and backward in time from the playhead position and updates automatically as the video plays.
+**Timeline Centering**: Centers the timeline on the current playhead while maintaining zoom level.
 
-**Timeline Centering**: Keep important content visible during navigation by centering the timeline view on the current playhead position while maintaining the current zoom level.
+### Marker Review
 
-### Marker Review Workflow
+**Unprocessed Marker Navigation**: Navigate between markers needing review — both within the current swimlane and globally across all swimlanes. Never wraps unexpectedly.
 
-**Unprocessed Marker Navigation**: Efficiently navigate between markers that need review. The system provides both swimlane-scoped navigation (within the current category) and global navigation (across all categories). Navigation is predictable and never wraps around unexpectedly.
+**Video Playback**: Play/pause, seek, and frame-precise stepping. Frame operations detect and use the video's actual frame rate.
 
-**Video Playback Control**: Comprehensive video navigation including play/pause, seeking operations, and frame-precise stepping for detailed work. All frame operations account for video-specific frame rates with automatic detection and appropriate fallbacks.
-
-**Marker State Management**: Toggle markers between confirmed, rejected, and unprocessed states using dedicated keys. The system uses toggle behavior where repeated presses cycle between the action state and unprocessed, making it easy to correct mistakes.
+**Marker States**: Toggle markers between confirmed, rejected, and unprocessed. Repeated key presses cycle back to unprocessed, making corrections easy.
 
 ### Marker Creation and Editing
 
-**Multiple Creation Methods**: Create regular markers, shot boundary markers for scene transitions, duplicate existing markers, and split markers into multiple segments. All creation operations provide immediate visual feedback and support rapid marker creation without interrupting video flow.
+**Multiple Creation Methods**: Create regular markers, shot boundary markers, duplicates, and splits. All operations give immediate visual feedback.
 
-**Advanced Editing Operations**: Modify marker properties including tag assignment, precise timing adjustments, and advanced operations like copying timing data between markers and merging marker properties. All timing operations use frame-accurate precision with validation to prevent invalid configurations.
+**Precise Timing**: Frame-accurate timing adjustments with validation to prevent invalid configurations.
 
-**Shot Boundary Integration**: Navigate between detected shot boundaries using PySceneDetect integration when available, with fallback to manual shot boundary markers for consistent navigation experience.
+**Shot Boundary Integration**: Navigate between detected shot boundaries, with fallback to manual shot boundary markers.
 
 ### AI Feedback Collection
 
-For users working with AI-generated markers, Stash Marker Studio includes a specialized feedback collection system to help improve AI model training:
+**Independent Feedback System**: Flag a marker for AI feedback — it gets rejected, but feedback data persists independently of the marker's lifecycle.
 
-**Independent Feedback System**: The AI feedback collection operates separately from the normal marker workflow. When you flag a marker for AI feedback, it automatically gets rejected but the feedback data persists independently of the marker's lifecycle.
+**Screengrab Generation**: Captures video frames for each collected marker when exporting, providing visual context for AI training data.
 
-**Screengrab Generation**: When exporting feedback data, the system captures video frames for each collected marker to provide visual context for the AI training data.
+**Export**: Feedback exported as zip files with marker metadata and screengrabs. All data is stored locally in your browser — nothing is sent anywhere automatically.
 
-**Export Capabilities**: Collected feedback can be exported as organized zip files containing marker metadata and associated screengrabs, suitable for AI model improvement workflows.
+### Tag Management
 
-**Local Storage**: All feedback data is stored locally in your browser and survives across sessions. Data remains local until you explicitly export it - there's no automatic synchronization with the server.
+**Corresponding Tag System**: Link tags together by setting a tag's description in Stashapp to `Corresponding Tag: TagName`. Linked tags share a swimlane. A gear icon on each swimlane lets you manage these relationships.
 
-Note: This feature is distinct from the "Corresponding Tags" system, which is used for general tag organization and conversion workflows regardless of marker source.
+**Marker Groups**: Organise related swimlanes into named visual groups using the marker group parent tag system (e.g. "1. Positions", "2. Actions").
+
+---
 
 ## Workflows
 
-### General Marker Review Workflow
+### AI-Generated Marker Review
 
-Stash Marker Studio supports both AI-generated marker review and general marker creation/editing workflows:
+1. Load scene with existing AI-generated markers
+2. Navigate through unprocessed markers using keyboard shortcuts
+3. Confirm or reject markers based on accuracy
+4. Use corresponding tag conversion to map AI tags to final tags
+5. Optionally collect feedback on problematic AI predictions
+6. Complete review — tag preview modal shows exactly what will change
 
-**For AI-Generated Markers:**
+### Example End-to-End Workflow
 
-- Load scene with existing AI-generated markers
-- Navigate through unprocessed markers using keyboard shortcuts
-- Confirm or reject markers based on accuracy
-- Use corresponding tag conversion to map AI tags to final tags
-- Optionally collect feedback on problematic AI predictions
-- Complete review and apply final tag conversions
+1. New scene added to Stashapp
+2. Scene matched with Tagger feature in Stashapp
+3. `AI_TagMe` tag set and Skier's AI model applied
+4. Click **Detect Shots** in the scene header (PySceneDetect runs in-app)
+5. Review markers: confirm or reject using keyboard shortcuts
+6. Convert corresponding tags (AI tags → real tags)
+7. Complete scene — modal previews tag changes, then advances to next scene
 
-**For Manual Marker Creation:**
+### Manual Marker Creation
 
-- Create new markers at current video position during playback
-- Set precise start/end times using frame-accurate controls
-- Apply appropriate tags and organize using marker groups
-- Duplicate and modify existing markers for efficiency
-- Use shot boundary detection for scene transition markers
+1. Create markers at current video position during playback
+2. Set precise start/end times using frame-accurate controls or the ▶ button
+3. Apply tags and organise using marker groups
+4. Duplicate and modify existing markers for efficiency
 
-### Example AI Review Workflow
-
-- New scene is added to Stashapp
-- Scene is matched with Tagger feature in Stashapp
-- AI_TagMe tag is set to scene and Skier's AI model is applied to it
-- PySceneDetect script is run to analyze scene to get shot boundaries
-- Manual marker review begins: confirm or reject the markers using keyboard shortcuts
-- Use corresponding tag conversion to change AI tags to their target real tags
-- Mark scene as reviewed and move to next scene
-
-The corresponding tag system works by setting tag descriptions in Stashapp. For example, setting "Kissing_AI" tag's Description to "Corresponding Tag: Kissing" creates the relationship. Stash Marker Studio's "Convert Corresponding Tags" functionality shows these conversions for user confirmation before applying them.
-
-## Interface Overview
-
-### Timeline Organization
-
-Stash Marker Studio organizes markers using a two-level system for maximum flexibility:
-
-**Swimlanes**: Each unique tag gets its own horizontal track (swimlane) in the timeline. When multiple markers overlap in time within the same swimlane, they automatically use separate tracks to prevent visual conflicts. This ensures all markers remain visible and clickable.
-
-**Marker Groups**: Multiple related swimlanes can be organized into visual groups with custom names and ordering. This is configured through the marker group parent tag system, allowing you to group related content (e.g., "1. Positions", "2. Actions", etc.) for better organization.
-
-### Corresponding Tag Management
-
-Tags can be linked together using the "Corresponding Tag" system. When you set a tag's description to "Corresponding Tag: TagName" in Stashapp, those tags will be grouped together on the same swimlane. This is useful for organizing related tags like "Kissing" and "Kissing_AI" together.
-
-Each swimlane displays a gear icon on hover that provides different interfaces based on the current state:
-
-- **No relationships**: Shows a tag autocomplete to set up corresponding tag relationships
-- **Existing relationships**: Shows a list of connected tags with individual remove buttons for each relationship
-
-### Marker States
-
-Markers can be in one of three states, each with distinct visual styling:
-
-- **Unprocessed**: New markers awaiting review (default state)
-- **Confirmed**: Approved markers tagged for retention
-- **Rejected**: Rejected markers tagged for potential deletion
-
-The interface provides visual feedback for each state, with rejected markers using red styling and confirmed markers using distinct highlighting.
+---
 
 ## Getting Started
 
-Stash Marker Studio requires Stash version 0.28 or later. 0.28 introduced support for start and end times for markers which is crucial for the tool.
+Requires Stash version 0.28 or later (introduced start/end time support for markers).
 
 ### Quick Start with Docker (Recommended)
-
-The easiest way to get started is using the pre-built Docker image from GitHub Container Registry:
 
 ```bash
 # Create configuration file
 cp app-config.sample.json app-config.json
 
 # Run the latest image
-docker run -p 3000:3000 -v ./app-config.json:/app/app-config.json ghcr.io/minasukihikimuna/stash-marker-studio:latest
+docker run -p 3000:3000 -v ./app-config.json:/app/app-config.json ghcr.io/dnke8088/stash-marker-studio-plus:latest
 ```
 
 Open [http://localhost:3000](http://localhost:3000) and use the configuration UI to set up your Stashapp connection and tag IDs.
 
-### Alternative: Build from Source
-
-If you prefer to build the image yourself:
-
-1. Clone the repository
-2. Copy the sample configuration file:
+For shot boundary detection, mount your media library so the container can access video files:
 
 ```bash
+docker run -p 3000:3000 \
+  -v ./app-config.json:/app/app-config.json \
+  -v /path/to/your/media:/data \
+  ghcr.io/dnke8088/stash-marker-studio-plus:latest
+```
+
+### Build from Source
+
+```bash
+git clone https://github.com/dnke8088/stash-marker-studio-plus
+cd stash-marker-studio-plus
 cp app-config.sample.json app-config.json
+docker build -t stash-marker-studio-plus .
+docker run -p 3000:3000 -v ./app-config.json:/app/app-config.json stash-marker-studio-plus
 ```
-
-3. Build and run the Docker image:
-
-```bash
-docker build -t stash-marker-studio .
-docker run -p 3000:3000 -v ./app-config.json:/app/app-config.json stash-marker-studio
-```
-
-4. Open [http://localhost:3000](http://localhost:3000)
-5. Use the configuration UI to set up your Stashapp connection and tag IDs
-6. Start using Stash Marker Studio!
 
 ### Running for Development
 
 ```bash
-# Install dependencies
 npm install
-
-# Copy sample configuration (required)
 cp app-config.sample.json app-config.json
-
-# Start development server
 npm run dev
 ```
 
-### Shot boundary analysis with PySceneDetect
+---
 
-For `pyscenedetect-process.js`, you need to [install PySceneDetect](https://www.scenedetect.com/download/) and ffmpeg, then run the custom script which will run shot boundary analysis on your scenes which have already been AI analyzed.
+## Configuration
 
-**Requirements:**
+### Required Tags
 
-- **PySceneDetect**: Version 0.5.6 or higher recommended
-- **ffmpeg**: Version 7.1 or higher recommended
-
-You can check your installed versions:
-
-```bash
-scenedetect version
-ffmpeg -version
-```
-
-Run the script:
-
-```bash
-npm install
-node src/scripts/pyscenedetect-process.js
-```
-
-The script will automatically check for these dependencies and display warnings if older versions are detected.
-
-### Configuration
-
-Configuration is managed through the application's internal configuration interface accessible at [http://localhost:3000](http://localhost:3000). The configuration system requires specific tag IDs to be created in your Stashapp database to manage marker states and organization.
-
-#### Required Tags
-
-You'll need to create the following tags in Stashapp. Tag names are customizable, but the example names shown follow common conventions:
+Create the following tags in Stashapp. Names are customisable.
 
 **Marker Status Tags:**
 
-- **Status Confirmed**: Assigned to approved markers permanently (example: "Marker Status: Confirmed")
-- **Status Rejected**: Assigned to rejected markers until deletion (example: "Marker Status: Rejected")
-- **Source Manual**: Assigned to markers created manually in the application (example: "Marker Source: Manual")
-- **AI Reviewed**: Assigned to scenes after marker review completion (example: "AI_Reviewed")
+- **Status Confirmed** — assigned to approved markers (e.g. `Marker Status: Confirmed`)
+- **Status Rejected** — assigned to rejected markers until deletion (e.g. `Marker Status: Rejected`)
+- **Source Manual** — assigned to manually created markers (e.g. `Marker Source: Manual`)
+- **AI Reviewed** — assigned to scenes after review completion (e.g. `AI_Reviewed`)
 
 **Marker Grouping Tags (Optional):**
 
-- **Marker Group Parent**: Parent tag for organizing marker groups (example: "Marker Group")
-  - Create child tags with pattern "Marker Group: N. DisplayName" for organization
-  - Enables visual grouping of related marker types in the timeline
+- **Marker Group Parent** — parent tag for organising marker groups (e.g. `Marker Group`)
+  - Create child tags with pattern `Marker Group: N. DisplayName`
 
-**PySceneDetect Integration Tags (Optional):**
+**Shot Boundary Tags (Optional):**
 
-- **Shot Boundary**: Primary tag for shot boundary markers (example: "Video Cut")
-- **Source Shot Boundary**: Source tag for PySceneDetect-created markers (example: "Marker Source: PySceneDetect")
-- **AI Tagged**: Tag for scenes ready for PySceneDetect processing (example: "AI_Tagged")
-- **Shot Boundary Processed**: Tag for scenes processed by PySceneDetect (example: "Scenes: PySceneDetect: Processed")
+- **Shot Boundary** — primary tag for shot boundary markers (e.g. `Video Cut`)
+- **Source Shot Boundary** — source tag for PySceneDetect markers (e.g. `Marker Source: PySceneDetect`)
+- **AI Tagged** — tag for scenes ready for shot boundary processing (e.g. `AI_Tagged`)
+- **Shot Boundary Processed** — tag applied after processing (e.g. `Scenes: PySceneDetect: Processed`)
 
-#### Server Configuration
+### Server Configuration
 
-Configure your Stashapp connection through the configuration interface:
+Configure your Stashapp connection in the app's configuration interface:
 
-- **Stashapp URL**: Your Stash GraphQL endpoint (typically http://localhost:9999/graphql)
-- **API Key**: Authentication key from Stashapp Settings → Security (leave empty if no auth required)
+- **Stashapp URL** — your Stash GraphQL endpoint (typically `http://localhost:9999/graphql`)
+- **API Key** — from Stashapp Settings → Security (leave empty if no auth required)
+
+---
 
 ## Development
 
-This project uses:
-
 - Next.js 15 with App Router
-- TypeScript for type safety
-- Tailwind CSS for styling
-- GraphQL for API communication
+- TypeScript
+- Tailwind CSS
+- GraphQL
+- Redux Toolkit
+- Jest
