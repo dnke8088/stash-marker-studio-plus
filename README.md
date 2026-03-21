@@ -131,22 +131,27 @@ Full Redux Toolkit migration for all marker state management. Navigation uses ma
 
 Requires Stash version 0.28 or later (introduced start/end time support for markers).
 
-### Quick Start with Docker (Recommended)
+### Quick Start with Docker Compose (Recommended)
 
 ```bash
-# Create configuration file
+# Copy sample files
 cp app-config.sample.json app-config.json
+cp docker-compose.sample.yaml docker-compose.yaml
 
-# Run the latest image
-docker run -p 3000:3000 -v ./app-config.json:/app/app-config.json ghcr.io/dnke8088/stash-marker-studio-plus:latest
+# Edit docker-compose.yaml to set your media library path, then:
+docker compose up -d
 ```
 
 Open [http://localhost:3000](http://localhost:3000) and use the configuration UI to set up your Stashapp connection and tag IDs.
 
-For shot boundary detection, mount your media library so the container can access video files:
+The media library volume (`/path/to/your/media:/data`) is required for in-app shot boundary detection. It must match the path Stash uses for the same files so video paths from the GraphQL API resolve correctly.
+
+### Quick Start with Docker Run
 
 ```bash
-docker run -p 3000:3000 \
+cp app-config.sample.json app-config.json
+
+docker run -d -p 3000:3000 \
   -v ./app-config.json:/app/app-config.json \
   -v /path/to/your/media:/data \
   ghcr.io/dnke8088/stash-marker-studio-plus:latest

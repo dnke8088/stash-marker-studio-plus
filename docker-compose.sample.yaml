@@ -1,0 +1,15 @@
+services:
+  stash-marker-studio-plus:
+    image: ghcr.io/dnke8088/stash-marker-studio-plus:latest
+    container_name: stash-marker-studio-plus
+    restart: unless-stopped
+    volumes:
+      # App configuration (Stash connection, tag IDs, etc.)
+      - ./app-config.json:/app/app-config.json
+      # Media library — must match Stash's /data mount so video paths from GraphQL resolve correctly
+      # Required for in-app shot boundary detection
+      - /path/to/your/media:/data
+      # Optional: custom ffmpeg binary (e.g. CUDA-capable build) — glibc hosts only
+      # - /path/to/ffmpeg:/app/ffmpeg
+    ports:
+      - "3000:3000"
