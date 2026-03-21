@@ -396,11 +396,16 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
     }
   }, [scene?.id]);
 
-  // Compute fresh tag data after page-1 operations complete
+  // Compute fresh tag data after page-1 operations complete.
+  // Fetches markers directly from the API so we get post-conversion state,
+  // not the stale React closure value of actionMarkers.
   const computePage2Data = useCallback(async () => {
     if (!scene) return { primaryTagsToAdd: [], tagsToRemove: [] };
-    const currentActionMarkers = actionMarkers ?? [];
-    const confirmedMarkers = currentActionMarkers.filter(m => isMarkerConfirmed(m));
+
+    // Fetch fresh markers from API (bypasses stale React closure)
+    const freshMarkersResult = await stashappService.getSceneMarkers(scene.id);
+    const freshMarkers: SceneMarker[] = freshMarkersResult.findSceneMarkers?.scene_markers ?? [];
+    const confirmedMarkers = freshMarkers.filter(m => isMarkerConfirmed(m) && !isShotBoundaryMarker(m));
     if (confirmedMarkers.length === 0) return { primaryTagsToAdd: [], tagsToRemove: [] };
 
     const currentSceneTags = await stashappService.getSceneTags(scene.id);
@@ -415,7 +420,7 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
       .sort((a, b) => a.name.localeCompare(b.name));
 
     return { primaryTagsToAdd, tagsToRemove };
-  }, [actionMarkers, scene, identifyAITagsToRemove]);
+  }, [scene, identifyAITagsToRemove]);
 
   // Page 1 of 2: run marker operations, then compute fresh tag data for page 2
   const handlePage1Confirm = useCallback(async (selectedActions: import("../../../serverConfig").CompletionDefaults) => {
