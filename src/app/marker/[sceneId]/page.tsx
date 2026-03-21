@@ -64,7 +64,7 @@ import {
   seekToTime,
   setError
 } from "../../../store/slices/markerSlice";
-import { selectMarkerShotBoundary, selectMarkerAiReviewed, selectShotBoundaryConfig } from "../../../store/slices/configSlice";
+import { selectMarkerShotBoundary, selectMarkerAiReviewed, selectShotBoundaryConfig, selectShotBoundaryEnabled } from "../../../store/slices/configSlice";
 import Toast from "../../components/Toast";
 import { useRouter } from "next/navigation";
 import { incorrectMarkerStorage } from "@/utils/incorrectMarkerStorage";
@@ -93,6 +93,7 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
   const markerShotBoundary = useAppSelector(selectMarkerShotBoundary);
   const markerAiReviewed = useAppSelector(selectMarkerAiReviewed);
   const shotBoundaryConfig = useAppSelector(selectShotBoundaryConfig);
+  const shotBoundaryEnabled = useAppSelector(selectShotBoundaryEnabled);
   const scene = useAppSelector(selectScene);
   const availableTags = useAppSelector(selectAvailableTags);
   const selectedMarkerId = useAppSelector(selectSelectedMarkerId);
@@ -1144,6 +1145,7 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
         isShotBoundaryProcessed={isShotBoundaryProcessed}
         isDetectingShots={isDetectingShots}
         onDetectShots={handleDetectShots}
+        shotBoundaryEnabled={shotBoundaryEnabled}
       />
 
       {error && (
