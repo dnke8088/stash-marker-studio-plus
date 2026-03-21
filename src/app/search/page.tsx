@@ -422,7 +422,9 @@ export default function SearchPage() {
                     </div>
                   )}
                 </div>
-                <h3 className="text-sm truncate text-white">{scene.title}</h3>
+                <h3 className="text-sm truncate text-white">
+                  {scene.title || scene.files?.[0]?.basename || scene.id}
+                </h3>
               </div>
             );
           })}
