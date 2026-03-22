@@ -15,22 +15,15 @@ export default function ClientLayout({
   // Don't apply ConfigGuard to config pages
   const shouldApplyGuard = !pathname.startsWith('/config');
 
-  const footer = (
-    <footer className="text-center text-xs text-gray-600 py-3">
-      Stash Marker Studio Plus v2.3.3
-    </footer>
-  );
-
   return (
     <ReduxProvider>
       <ConfigProvider>
         {shouldApplyGuard ? (
           <ConfigGuard>
-            <div className="min-h-screen bg-gray-900 text-white flex flex-col">
-              <main className="flex-1">
+            <div className="min-h-screen bg-gray-900 text-white">
+              <main>
                 {children}
               </main>
-              {footer}
             </div>
           </ConfigGuard>
         ) : (
@@ -38,7 +31,9 @@ export default function ClientLayout({
             <main className="flex-1">
               {children}
             </main>
-            {footer}
+            <footer className="text-center text-xs text-gray-600 py-3">
+              Stash Marker Studio Plus v2.3.3
+            </footer>
           </div>
         )}
       </ConfigProvider>
