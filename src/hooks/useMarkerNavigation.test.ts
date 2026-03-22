@@ -20,9 +20,9 @@ jest.mock("../services/StashappService", () => ({
   },
 }));
 
-// Helper: build a MarkerWithTrack
+// Helper: build a MarkerWithTrack (cast avoids needing all SceneMarker fields in tests)
 function mwt(id: string, seconds: number, swimlane: number): MarkerWithTrack {
-  return { id, seconds, swimlane, track: 0 };
+  return { id, seconds, swimlane, track: 0, tagGroup: "" } as unknown as MarkerWithTrack;
 }
 
 // Helper: build a tagGroups array with N lanes

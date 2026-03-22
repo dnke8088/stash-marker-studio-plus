@@ -190,99 +190,75 @@ export const useMarkerNavigation = (params: UseMarkerNavigationParams) => {
     return null; // No unprocessed markers found
   }, [markersWithTracks, tagGroups, actionMarkers, selectedMarkerId, isUnprocessed]);
 
-  // Helper function to find next unprocessed marker in current swimlane
+  // Helper function to find next unprocessed marker in current swimlane,
+  // crossing to the next swimlane down if the current lane is exhausted.
   const findNextUnprocessedMarkerInSwimlane = useCallback((): string | null => {
-    if (markersWithTracks.length === 0) {
-      // If no swimlane data, stay on current marker
-      return selectedMarkerId;
-    }
+    if (markersWithTracks.length === 0) return null;
 
-    const currentMarker = actionMarkers.find(
-      (m) => m.id === selectedMarkerId
-    );
+    const currentMarker = actionMarkers.find((m) => m.id === selectedMarkerId);
     if (!currentMarker) return null;
 
-    // Find current marker in markersWithTracks
-    const currentMarkerWithTrack = markersWithTracks.find(
-      (m) => m.id === currentMarker.id
-    );
-    if (!currentMarkerWithTrack) return selectedMarkerId;
+    const currentMarkerWithTrack = markersWithTracks.find((m) => m.id === currentMarker.id);
+    if (!currentMarkerWithTrack) return null;
 
-    // Get all markers in the same swimlane, sorted by time
-    const swimlaneMarkers = markersWithTracks
-      .filter((m) => m.swimlane === currentMarkerWithTrack.swimlane)
-      .sort((a, b) => a.seconds - b.seconds);
+    const currentSwimlane = currentMarkerWithTrack.swimlane;
 
-    const currentIndex = swimlaneMarkers.findIndex(
-      (m) => m.id === currentMarker.id
-    );
-    if (currentIndex === -1) return selectedMarkerId;
+    // Search from current swimlane onwards (including current, starting after current marker)
+    for (let lane = currentSwimlane; lane < tagGroups.length; lane++) {
+      const laneMarkers = markersWithTracks
+        .filter((m) => m.swimlane === lane)
+        .sort((a, b) => a.seconds - b.seconds);
 
-    // Look for next unprocessed marker in swimlane starting from current position
-    for (let i = currentIndex + 1; i < swimlaneMarkers.length; i++) {
-      const marker = swimlaneMarkers[i];
-      // Find this marker in actionMarkers to check its status
-      const actionMarker = actionMarkers.find((m) => m.id === marker.id);
-      if (actionMarker && isUnprocessed(actionMarker)) {
-        return actionMarker.id;
+      // In the current lane, only look after the current marker
+      const startIndex = lane === currentSwimlane
+        ? laneMarkers.findIndex((m) => m.id === currentMarker.id) + 1
+        : 0;
+
+      for (let i = startIndex; i < laneMarkers.length; i++) {
+        const actionMarker = actionMarkers.find((m) => m.id === laneMarkers[i].id);
+        if (actionMarker && isUnprocessed(actionMarker)) {
+          return actionMarker.id;
+        }
       }
     }
 
-    // If no later unprocessed markers found in swimlane, stay on current marker
-    return selectedMarkerId;
-  }, [markersWithTracks, actionMarkers, selectedMarkerId, isUnprocessed]);
+    return null;
+  }, [markersWithTracks, tagGroups, actionMarkers, selectedMarkerId, isUnprocessed]);
 
-  // Helper function to find previous unprocessed marker in current swimlane
-  const findPreviousUnprocessedMarkerInSwimlane = useCallback(():
-    | string
-    | null => {
-    if (markersWithTracks.length === 0) {
-      // If no swimlane data, stay on current marker
-      return selectedMarkerId;
-    }
+  // Helper function to find previous unprocessed marker in current swimlane,
+  // crossing to the next swimlane up if the current lane is exhausted.
+  // Does NOT wrap within the same swimlane.
+  const findPreviousUnprocessedMarkerInSwimlane = useCallback((): string | null => {
+    if (markersWithTracks.length === 0) return null;
 
-    const currentMarker = actionMarkers.find(
-      (m) => m.id === selectedMarkerId
-    );
+    const currentMarker = actionMarkers.find((m) => m.id === selectedMarkerId);
     if (!currentMarker) return null;
 
-    // Find current marker in markersWithTracks
-    const currentMarkerWithTrack = markersWithTracks.find(
-      (m) => m.id === currentMarker.id
-    );
-    if (!currentMarkerWithTrack) return selectedMarkerId;
+    const currentMarkerWithTrack = markersWithTracks.find((m) => m.id === currentMarker.id);
+    if (!currentMarkerWithTrack) return null;
 
-    // Get all markers in the same swimlane, sorted by time
-    const swimlaneMarkers = markersWithTracks
-      .filter((m) => m.swimlane === currentMarkerWithTrack.swimlane)
-      .sort((a, b) => a.seconds - b.seconds);
+    const currentSwimlane = currentMarkerWithTrack.swimlane;
 
-    const currentIndex = swimlaneMarkers.findIndex(
-      (m) => m.id === currentMarker.id
-    );
-    if (currentIndex === -1) return selectedMarkerId;
+    // Search from current swimlane backwards (including current, starting before current marker)
+    for (let lane = currentSwimlane; lane >= 0; lane--) {
+      const laneMarkers = markersWithTracks
+        .filter((m) => m.swimlane === lane)
+        .sort((a, b) => b.seconds - a.seconds); // descending — last marker first
 
-    // Look for previous unprocessed marker in swimlane starting from current position
-    for (let i = currentIndex - 1; i >= 0; i--) {
-      const marker = swimlaneMarkers[i];
-      // Find this marker in actionMarkers to check its status
-      const actionMarker = actionMarkers.find((m) => m.id === marker.id);
-      if (actionMarker && isUnprocessed(actionMarker)) {
-        return actionMarker.id;
+      // In the current lane, only look before the current marker (i.e. lower seconds)
+      const startIndex = lane === currentSwimlane
+        ? laneMarkers.findIndex((m) => m.id === currentMarker.id) + 1
+        : 0;
+
+      for (let i = startIndex; i < laneMarkers.length; i++) {
+        const actionMarker = actionMarkers.find((m) => m.id === laneMarkers[i].id);
+        if (actionMarker && isUnprocessed(actionMarker)) {
+          return actionMarker.id;
+        }
       }
     }
 
-    // If no unprocessed found before current, search from end of swimlane
-    for (let i = swimlaneMarkers.length - 1; i > currentIndex; i--) {
-      const marker = swimlaneMarkers[i];
-      // Find this marker in actionMarkers to check its status
-      const actionMarker = actionMarkers.find((m) => m.id === marker.id);
-      if (actionMarker && isUnprocessed(actionMarker)) {
-        return actionMarker.id;
-      }
-    }
-
-    return null; // No unprocessed markers found in swimlane
+    return null;
   }, [markersWithTracks, actionMarkers, selectedMarkerId, isUnprocessed]);
 
   // Helper function to find next unprocessed marker globally (cross-swimlane without rollover)
