@@ -36,11 +36,17 @@ This feature extends the navigation to automatically cross swim lane boundaries.
 
 ## Implementation
 
+### Context
+
+`findNextUnprocessedMarkerInSwimlane` is called by the `navigation.nextUnprocessedInSwimlane` keyboard action (`m` key, bound in `useDynamicKeyboardShortcuts.ts`). `findPreviousUnprocessedMarkerInSwimlane` is called by `navigation.previousUnprocessedInSwimlane` (`n` key). These are **modified in-place** — the keyboard wiring stays unchanged.
+
+The existing `findNextUnprocessedGlobal` and `findPreviousUnprocessedGlobal` functions are separate (used by `Shift+M` / `Shift+N`) and are **not changed**.
+
 ### Functions to Modify
 
 #### `findNextUnprocessedMarkerInSwimlane` (lines 194–233 in `src/hooks/useMarkerNavigation.ts`)
 
-**Current behavior:** Searches forward in the current swim lane for an unprocessed marker. If none found, returns `selectedMarkerId` (stay put).
+**Current behavior:** Searches forward in the current swim lane for an unprocessed marker. If none found, returns `selectedMarkerId` (stay put). **The return value changes to `null` at the boundary** — callers already handle `null` as a no-op.
 
 **New behavior:**
 1. Search forward in the current swim lane for an unprocessed marker.
