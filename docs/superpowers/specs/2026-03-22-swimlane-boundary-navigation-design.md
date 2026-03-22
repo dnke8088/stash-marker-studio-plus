@@ -61,7 +61,7 @@ The existing `findNextUnprocessedGlobal` and `findPreviousUnprocessedGlobal` fun
 
 #### `findPreviousUnprocessedMarkerInSwimlane` (lines 236–286 in `src/hooks/useMarkerNavigation.ts`)
 
-**Current behavior:** Searches backward in the current swim lane. If none found, wraps to the end of the same swim lane (this wrap behavior should be removed). If still none, returns `null`.
+**Current behavior:** Searches backward in the current swim lane. If none found, wraps to the end of the same swim lane (this wrap behavior should be removed). If still none, returns `null`. **The `selectedMarkerId` stay-put return is replaced by `null` at all hard boundaries** — callers already handle `null` as a no-op.
 
 **New behavior:**
 1. Search backward in the current swim lane for an unprocessed marker.
