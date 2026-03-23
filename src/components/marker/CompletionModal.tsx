@@ -188,7 +188,7 @@ export function CompletionModal({
   // ── Loading page ────────────────────────────────────────────────────────────
   if (currentPage === "loading") {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
         <div className="bg-gray-800 p-6 rounded-lg max-w-2xl w-full relative">
           <h3 className="text-xl font-bold mb-6">Complete Scene Processing</h3>
           <div className="flex flex-col items-center py-8 text-gray-300">
@@ -224,7 +224,7 @@ export function CompletionModal({
             !effectivePrimaryTagsToAdd.some(p => p.id === t.id)
           ).slice(0, 10);
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
         <div className="bg-gray-800 p-6 rounded-lg max-w-2xl w-full relative">
           <div className="flex justify-between items-start mb-4">
             <h3 className="text-xl font-bold">
@@ -419,7 +419,7 @@ export function CompletionModal({
 
   // ── Page 1 ──────────────────────────────────────────────────────────────────
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-gray-800 p-6 rounded-lg max-w-2xl w-full relative">
         <div className="flex justify-between items-start mb-4">
           <h3 className="text-xl font-bold">
