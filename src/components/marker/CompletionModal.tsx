@@ -131,9 +131,10 @@ export function CompletionModal({
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept if the user is typing in an input/textarea
+      // Don't intercept if the user is typing in a text input/textarea
+      // Note: checkboxes are HTMLInputElement too, but we DO want to intercept Enter on those
       if (
-        e.target instanceof HTMLInputElement ||
+        (e.target instanceof HTMLInputElement && e.target.type !== "checkbox") ||
         e.target instanceof HTMLTextAreaElement ||
         e.target instanceof HTMLSelectElement
       ) {
