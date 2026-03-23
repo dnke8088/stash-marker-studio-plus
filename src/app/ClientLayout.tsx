@@ -32,7 +32,7 @@ export default function ClientLayout({
               {children}
             </main>
             <footer className="text-center text-xs text-gray-600 py-3">
-              Stash Marker Studio Plus v2.4.0
+              Stash Marker Studio Plus v{process.env.NEXT_PUBLIC_APP_VERSION}
             </footer>
           </div>
         )}
