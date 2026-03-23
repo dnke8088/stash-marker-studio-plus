@@ -132,7 +132,6 @@ export const useDynamicKeyboardShortcuts = (params: UseDynamicKeyboardShortcutsP
       mergeMarkerProperties,
       jumpToNextShot,
       jumpToPreviousShot,
-      executeCompletion,
       confirmDeleteRejectedMarkers,
       handleConfirmCorrespondingTagConversion,
       // showToast,
@@ -440,9 +439,8 @@ export const useDynamicKeyboardShortcuts = (params: UseDynamicKeyboardShortcutsP
 
       // Modal shortcuts
       'modal.confirm': () => {
-        if (params.isCompletionModalOpen) {
-          executeCompletion();
-        } else if (params.isDeletingRejected) {
+        // Completion modal handles Enter internally (it has multiple pages)
+        if (params.isDeletingRejected) {
           confirmDeleteRejectedMarkers();
         } else if (params.isCorrespondingTagConversionModalOpen) {
           handleConfirmCorrespondingTagConversion();
@@ -451,7 +449,8 @@ export const useDynamicKeyboardShortcuts = (params: UseDynamicKeyboardShortcutsP
       },
 
       'modal.cancel': () => {
-        if (params.isCompletionModalOpen || params.isDeletingRejected || 
+        // Completion modal handles Escape internally
+        if (params.isDeletingRejected ||
             params.isCorrespondingTagConversionModalOpen || params.isCollectingModalOpen) {
           dispatch(closeModal());
         }

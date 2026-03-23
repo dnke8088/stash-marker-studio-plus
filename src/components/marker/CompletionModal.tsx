@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { SceneMarker, Tag, stashappService } from "../../services/StashappService";
 import { CompletionDefaults } from "../../serverConfig";
 
@@ -121,10 +121,48 @@ export function CompletionModal({
     setSelectedActions((prev) => ({ ...prev, [action]: !prev[action] }));
   };
 
-  const handlePage1Next = () => {
+  const handlePage1Next = useCallback(() => {
     setCurrentPage("loading");
     onPage1Confirm(selectedActions);
-  };
+  }, [selectedActions, onPage1Confirm]);
+
+  // Handle Enter/Escape keyboard shortcuts for the modal
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept if the user is typing in an input/textarea
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+
+      if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        if (currentPage === "page1") {
+          handlePage1Next();
+        } else if (currentPage === "page2" && page2Data) {
+          const { primaryTagsToAdd } = page2Data;
+          const effectivePrimaryTagsToAdd = [
+            ...primaryTagsToAdd,
+            ...manualTagsToAdd.filter(t => !primaryTagsToAdd.some(p => p.id === t.id)),
+          ];
+          onPage2Confirm(selectedActions, effectivePrimaryTagsToAdd);
+        }
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        onCancel();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown, true);
+    return () => document.removeEventListener("keydown", handleKeyDown, true);
+  }, [isOpen, currentPage, page2Data, manualTagsToAdd, selectedActions, handlePage1Next, onPage2Confirm, onCancel]);
 
   const handleRemoveTagClick = (tag: Tag) => {
     const desc = tag.description ?? "";
