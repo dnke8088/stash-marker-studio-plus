@@ -483,11 +483,13 @@ export const useDynamicKeyboardShortcuts = (params: UseDynamicKeyboardShortcutsP
         return; // No shortcut defined for this key combination
       }
 
-      // Handle Enter key conflict: when no modal is open, Enter should play from marker
-      const isAnyModalOpen = params.isCompletionModalOpen || params.isDeletingRejected || 
+      // Handle Enter key conflict: when no modal is open, Enter should open the completion modal
+      const isAnyModalOpen = params.isCompletionModalOpen || params.isDeletingRejected ||
                               params.isCorrespondingTagConversionModalOpen || params.isCollectingModalOpen;
       if (actionId === 'modal.confirm' && event.key === 'Enter' && !isAnyModalOpen) {
-        actionId = 'video.playFromMarker';
+        params.executeCompletion();
+        event.preventDefault();
+        return;
       }
 
       // Handle Escape key conflict: when no modal is open, Escape should handle system escape
@@ -512,7 +514,8 @@ export const useDynamicKeyboardShortcuts = (params: UseDynamicKeyboardShortcutsP
         console.error(`Error executing shortcut action ${actionId}:`, error);
       }
     },
-    [actionHandlers, params.isCompletionModalOpen, params.isDeletingRejected, 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [actionHandlers, params.executeCompletion, params.isCompletionModalOpen, params.isDeletingRejected,
      params.isCorrespondingTagConversionModalOpen, params.isCollectingModalOpen]
   );
 
