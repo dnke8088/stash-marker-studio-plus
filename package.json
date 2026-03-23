@@ -12,7 +12,9 @@
     "start": "node scripts/check-config.js && next start",
     "lint": "eslint .",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "release:patch": "npm version patch",
+    "release:minor": "npm version minor"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.7",
