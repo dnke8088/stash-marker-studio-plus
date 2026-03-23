@@ -82,6 +82,8 @@ export function MarkerPageHeader({
     action();
   }, []);
 
+  const allMarkersApproved = checkAllMarkersApproved();
+
   const sceneTitle = scene
     ? scene.title || scene.files?.[0]?.basename || scene.id
     : "Scene Markers";
@@ -165,17 +167,17 @@ export function MarkerPageHeader({
             onClick={onComplete}
             disabled={isLoading}
             className={`px-3 py-1.5 rounded-sm text-sm font-medium transition-colors ${
-              !checkAllMarkersApproved()
+              !allMarkersApproved
                 ? "bg-yellow-600 hover:bg-yellow-700 text-white"
                 : "bg-green-600 hover:bg-green-700 text-white"
             } disabled:bg-gray-600 disabled:cursor-not-allowed`}
             title={
-              !checkAllMarkersApproved()
+              !allMarkersApproved
                 ? "Complete scene (some markers not approved - warnings will be shown)"
                 : "Complete scene (generate markers, mark as reviewed, and clean up tags)"
             }
           >
-            {!checkAllMarkersApproved() ? "⚠️ Complete" : "Complete"}
+            {!allMarkersApproved ? "⚠️ Complete" : "Complete"}
           </button>
 
           {/* More actions dropdown */}

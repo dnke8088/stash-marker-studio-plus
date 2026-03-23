@@ -15,7 +15,6 @@ import {
   playVideo,
   updateMarkerTimes,
   setIncorrectMarkers,
-  // pauseVideo,
 } from '../store/slices/markerSlice';
 import { keyboardShortcutService } from '../services/KeyboardShortcutService';
 import { type SceneMarker, type Scene } from '../services/StashappService';
@@ -116,8 +115,6 @@ export const useDynamicKeyboardShortcuts = (params: UseDynamicKeyboardShortcutsP
       incorrectMarkers,
       currentVideoTime,
       videoDuration,
-      // videoElementRef,
-      // fetchData, // No longer needed for markIncorrect action
       handleCancelEdit,
       handleEditMarker,
       handleDeleteRejectedMarkers,
@@ -134,7 +131,6 @@ export const useDynamicKeyboardShortcuts = (params: UseDynamicKeyboardShortcutsP
       jumpToPreviousShot,
       confirmDeleteRejectedMarkers,
       handleConfirmCorrespondingTagConversion,
-      // showToast,
       navigateBetweenSwimlanes,
       navigateWithinSwimlane,
       findPreviousUnprocessedGlobal,
@@ -461,15 +457,6 @@ export const useDynamicKeyboardShortcuts = (params: UseDynamicKeyboardShortcutsP
   // Main keyboard handler
   const handleKeyDown = useCallback(
     async (event: KeyboardEvent) => {
-      // Only log key press if it's not a modifier key by itself
-      if (!["Control", "Alt", "Shift", "Meta"].includes(event.key)) {
-        console.log(
-          `Key pressed: ${event.key}${event.shiftKey ? " + Shift" : ""}${
-            event.ctrlKey || event.metaKey ? " + Ctrl" : ""
-          }${event.altKey ? " + Alt" : ""}`
-        );
-      }
-
       // Ignore keyboard shortcuts if we're typing in an input field or capturing shortcuts
       if (
         event.target instanceof HTMLInputElement ||
@@ -492,13 +479,6 @@ export const useDynamicKeyboardShortcuts = (params: UseDynamicKeyboardShortcutsP
         meta: event.metaKey,
       });
 
-      console.log(`Looking for action for key combo: ${event.key} with modifiers:`, {
-        ctrl: event.ctrlKey || event.metaKey,
-        alt: event.altKey,
-        shift: shouldIgnoreShift ? false : event.shiftKey,
-        meta: event.metaKey,
-      }, `Found actionId: ${actionId}`);
-
       if (!actionId) {
         return; // No shortcut defined for this key combination
       }
@@ -520,16 +500,13 @@ export const useDynamicKeyboardShortcuts = (params: UseDynamicKeyboardShortcutsP
       const handler = handlers[actionId as keyof typeof handlers];
 
       if (!handler) {
-        console.warn(`No handler found for action: ${actionId}`);
         return;
       }
 
       // Prevent default browser behavior
       event.preventDefault();
 
-      // Execute the action
       try {
-        console.log(`Executing action: ${actionId}`);
         handler();
       } catch (error) {
         console.error(`Error executing shortcut action ${actionId}:`, error);

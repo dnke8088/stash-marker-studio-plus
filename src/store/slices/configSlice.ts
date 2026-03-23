@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
-import { AppConfig } from '@/serverConfig';
+import { AppConfig, ShotBoundaryConfig } from '@/serverConfig';
 
 export type MarkerGroupTag = {
   id: string;
@@ -136,24 +136,14 @@ const configSlice = createSlice({
   reducers: {
     setFullConfig: (state, action: PayloadAction<AppConfig>) => {
       const markerGroups = state.markerGroups;
-      const loaded = { ...action.payload, isLoaded: true, markerGroups };
-      if (loaded.shotBoundaryConfig) {
-        loaded.shotBoundaryConfig.enabled = loaded.shotBoundaryConfig.enabled ?? false;
-      }
-      return loaded;
+      return { ...action.payload, isLoaded: true, markerGroups };
     },
     setMarkerGroupingConfig: (state, action: PayloadAction<{ markerGroupParent: string }>) => {
       state.markerGroupingConfig = action.payload;
       // Clear marker groups when parent changes
       state.markerGroups.tags = [];
     },
-    setShotBoundaryConfig: (state, action: PayloadAction<{
-      enabled: boolean;
-      aiTagged: string;
-      shotBoundary: string;
-      sourceShotBoundaryAnalysis: string;
-      shotBoundaryProcessed: string;
-    }>) => {
+    setShotBoundaryConfig: (state, action: PayloadAction<ShotBoundaryConfig>) => {
       state.shotBoundaryConfig = action.payload;
     },
     clearMarkerGroups: (state) => {
@@ -200,7 +190,7 @@ export const selectMarkerConfig = (state: { config: ConfigState }) => state.conf
 export const selectMarkerGroupingConfig = (state: { config: ConfigState }) => state.config.markerGroupingConfig;
 export const selectShotBoundaryConfig = (state: { config: ConfigState }) => state.config.shotBoundaryConfig;
 export const selectShotBoundaryEnabled = (state: { config: ConfigState }) =>
-  state.config.shotBoundaryConfig.enabled ?? false;
+  state.config.shotBoundaryConfig.enabled;
 export const selectVideoPlaybackConfig = (state: { config: ConfigState }) => state.config.videoPlaybackConfig;
 
 // Marker groups selectors

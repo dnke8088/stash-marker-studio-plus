@@ -67,62 +67,32 @@ export const useMarkerOperations = (
     };
   }, []);
 
-  // Get action markers helper
-  const getActionMarkers = useCallback(() => {
-    return actionMarkers;
-  }, [actionMarkers]);
-
   // Calculate marker summary
   const getMarkerSummary = useCallback(() => {
-    const actionMarkers = getActionMarkers();
     if (!actionMarkers.length) return { confirmed: 0, rejected: 0, unknown: 0 };
-
     return calculateMarkerSummary(actionMarkers);
-  }, [getActionMarkers]);
+  }, [actionMarkers]);
 
   // Split current marker at playhead position
   const splitCurrentMarker = useCallback(async () => {
-    const actionMarkers = getActionMarkers();
-    if (!actionMarkers || !selectedMarkerId || !scene) {
-      console.log("Cannot split marker:", {
-        hasActionMarkers: !!actionMarkers,
-        selectedMarkerId: selectedMarkerId,
-        hasScene: !!scene,
-      });
-      return;
-    }
+    if (!selectedMarkerId || !scene) return;
 
-    const currentMarker = actionMarkers.find(
-      (m) => m.id === selectedMarkerId
-    );
-    if (!currentMarker) {
-      console.log("Cannot split marker: No current marker found");
-      return;
-    }
+    const currentMarker = actionMarkers.find((m) => m.id === selectedMarkerId);
+    if (!currentMarker) return;
 
     const currentTime = currentVideoTime;
 
-    console.log("Attempting to split marker:", {
-      markerId: currentMarker.id,
-      markerStart: currentMarker.seconds,
-      markerEnd: currentMarker.end_seconds,
-      splitTime: currentTime,
-    });
-
-    // Check if the current time is within the marker's range
     if (
       currentTime <= currentMarker.seconds ||
       (currentMarker.end_seconds && currentTime >= currentMarker.end_seconds)
     ) {
-      console.log("Split failed: Current time not within marker range");
       dispatch(setError("Current time must be within the marker's range to split it"));
       return;
     }
 
     try {
-      // Use Redux splitMarker thunk
       const originalTagIds = currentMarker.tags.map((tag) => tag.id);
-      const result = await dispatch(splitMarker({
+      await dispatch(splitMarker({
         sceneId: scene.id,
         sourceMarkerId: currentMarker.id,
         splitTime: currentTime,
@@ -132,25 +102,14 @@ export const useMarkerOperations = (
         sourceEndTime: currentMarker.end_seconds || null,
       })).unwrap();
 
-      console.log("Split marker completed:", result);
-
-      // After split, pause video and seek to split time
       dispatch(pauseVideo());
       dispatch(seekToTime(currentTime));
-      
-      // Keep the original marker selected (it now ends at the split time)
       dispatch(setSelectedMarkerId(currentMarker.id));
     } catch (err) {
       console.error("Error splitting marker:", err);
       dispatch(setError(`Failed to split marker: ${err}`));
     }
-  }, [
-    getActionMarkers,
-    selectedMarkerId,
-    scene,
-    currentVideoTime,
-    dispatch,
-  ]);
+  }, [actionMarkers, selectedMarkerId, scene, currentVideoTime, dispatch]);
 
   // Split a Video Cut marker at the current playhead position
   const splitVideoCutMarker = useCallback(async () => {
@@ -179,7 +138,7 @@ export const useMarkerOperations = (
     try {
       // Use Redux splitMarker thunk
       const originalTagIds = videoCutMarker.tags.map((tag) => tag.id);
-      const result = await dispatch(splitMarker({
+      await dispatch(splitMarker({
         sceneId: scene.id,
         sourceMarkerId: videoCutMarker.id,
         splitTime: currentTime,
@@ -189,9 +148,6 @@ export const useMarkerOperations = (
         sourceEndTime: videoCutMarker.end_seconds || null,
       })).unwrap();
 
-      console.log("Split Video Cut marker completed:", result);
-
-      // Show success message
       showToast("Video Cut marker split successfully", "success");
     } catch (err) {
       console.error("Error splitting Video Cut marker:", err);
@@ -199,16 +155,9 @@ export const useMarkerOperations = (
     }
   }, [markers, currentVideoTime, scene, dispatch, showToast]);
 
-  // Create or duplicate marker - now just calls the marker page's createOrDuplicateMarker
   const createOrDuplicateMarker = useCallback(
     (startTime: number, endTime: number | null, sourceMarker?: SceneMarker) => {
-      console.log("useMarkerOperations.createOrDuplicateMarker - delegating to marker page function");
-      // This will be replaced by direct calls to the marker page's createOrDuplicateMarker
-      // For now, keep the old logic as fallback
-      if (!scene || !availableTags?.length) {
-        console.log("Failed to create marker: missing scene or tags");
-        return;
-      }
+      if (!scene || !availableTags?.length) return;
 
       const isDuplicate = !!sourceMarker;
       const tagId = isDuplicate
@@ -234,21 +183,14 @@ export const useMarkerOperations = (
 
   // Handle delete rejected markers
   const handleDeleteRejectedMarkers = useCallback(async () => {
-    const actionMarkers = getActionMarkers();
-    if (!actionMarkers) return;
-
     const rejected = actionMarkers.filter(isMarkerRejected);
     dispatch(openDeleteRejectedModal({ rejectedMarkers: rejected }));
-  }, [getActionMarkers, dispatch]);
+  }, [actionMarkers, dispatch]);
 
   // Copy marker times function
   const copyMarkerTimes = useCallback(() => {
-    const actionMarkers = getActionMarkers();
-    if (!actionMarkers || !selectedMarkerId) return;
-
-    const currentMarker = actionMarkers.find(
-      (m) => m.id === selectedMarkerId
-    );
+    if (!selectedMarkerId) return;
+    const currentMarker = actionMarkers.find((m) => m.id === selectedMarkerId);
     if (!currentMarker) return;
 
     const copiedTimes = {
@@ -267,7 +209,7 @@ export const useMarkerOperations = (
       `Copied times: ${formatSeconds(copiedTimes.start, true)} - ${endTimeStr}`,
       "success"
     );
-  }, [getActionMarkers, selectedMarkerId, dispatch, showToast]);
+  }, [actionMarkers, selectedMarkerId, dispatch, showToast]);
 
   // Paste marker times function
   const pasteMarkerTimes = useCallback(async () => {
@@ -276,18 +218,8 @@ export const useMarkerOperations = (
       return;
     }
 
-    const actionMarkers = getActionMarkers();
-    if (!actionMarkers) {
-      return;
-    }
-
-    const currentMarker = actionMarkers.find(
-      (m) => m.id === selectedMarkerId
-    );
-    if (!currentMarker || !scene) {
-      console.log("Cannot paste marker times: No current marker or scene found");
-      return;
-    }
+    const currentMarker = actionMarkers.find((m) => m.id === selectedMarkerId);
+    if (!currentMarker || !scene) return;
 
     try {
       await dispatch(updateMarkerTimes({
@@ -313,14 +245,7 @@ export const useMarkerOperations = (
       console.error("Error pasting marker times:", err);
       showToast("Failed to paste marker times", "error");
     }
-  }, [
-    copiedMarkerTimes,
-    getActionMarkers,
-    selectedMarkerId,
-    showToast,
-    dispatch,
-    scene,
-  ]);
+  }, [copiedMarkerTimes, actionMarkers, selectedMarkerId, showToast, dispatch, scene]);
 
   // Confirm delete rejected markers
   const confirmDeleteRejectedMarkers = useCallback(async () => {
@@ -339,9 +264,6 @@ export const useMarkerOperations = (
 
   // Handle corresponding tag conversion
   const handleCorrespondingTagConversion = useCallback(async () => {
-    const actionMarkers = getActionMarkers();
-    if (!actionMarkers) return;
-
     try {
       const markers = await stashappService.convertConfirmedMarkersWithCorrespondingTags(
         actionMarkers
@@ -351,7 +273,7 @@ export const useMarkerOperations = (
       console.error("Error preparing corresponding tag conversion:", err);
       dispatch(setError("Failed to prepare markers for conversion"));
     }
-  }, [getActionMarkers, dispatch]);
+  }, [actionMarkers, dispatch]);
 
   // Handle confirm corresponding tag conversion
   const handleConfirmCorrespondingTagConversion = useCallback(async () => {
@@ -372,69 +294,28 @@ export const useMarkerOperations = (
 
   // Check if all markers are approved (confirmed or rejected)
   const checkAllMarkersApproved = useCallback(() => {
-    const actionMarkers = getActionMarkers();
-    if (!actionMarkers || actionMarkers.length === 0) return true;
-
+    if (actionMarkers.length === 0) return true;
     return filterUnprocessedMarkers(actionMarkers).length === 0;
-  }, [getActionMarkers]);
+  }, [actionMarkers]);
 
   // Helper function to identify AI tags that should be removed from the scene
   const identifyAITagsToRemove = useCallback(
     async (confirmedMarkers: SceneMarker[]): Promise<Tag[]> => {
       try {
-        // Get current scene tags
-        const currentSceneTags = await stashappService.getSceneTags(
-          confirmedMarkers[0].scene.id
-        );
+        const [currentSceneTags, allTags] = await Promise.all([
+          stashappService.getSceneTags(confirmedMarkers[0].scene.id),
+          stashappService.getAllTags(),
+        ]);
 
-        console.log("=== AI Tag Removal Debug ===");
-        console.log(
-          "Current scene tags:",
-          currentSceneTags.map((t) => ({ id: t.id, name: t.name }))
-        );
+        const aiParentTag = allTags.findTags.tags.find((tag) => tag.name === "AI");
+        if (!aiParentTag) return [];
 
-        // Get all tags to find the AI parent tag and its children
-        const allTags = await stashappService.getAllTags();
-
-        // Find the "AI" parent tag
-        const aiParentTag = allTags.findTags.tags.find(
-          (tag) => tag.name === "AI"
-        );
-        console.log(
-          "AI parent tag found:",
-          aiParentTag
-            ? `${aiParentTag.name} (ID: ${aiParentTag.id})`
-            : "Not found"
-        );
-
-        if (!aiParentTag) {
-          console.log("No AI parent tag found, cannot remove AI child tags");
-          return [];
-        }
-
-        // Get the AI tag's children directly
         const aiChildTags = aiParentTag.children || [];
-
-        console.log(
-          "All AI child tags found:",
-          aiChildTags.map((t) => t.name)
-        );
-
-        // Find which AI child tags are currently on the scene
-        const aiChildTagsOnScene = currentSceneTags.filter((sceneTag) =>
+        return currentSceneTags.filter((sceneTag) =>
           aiChildTags.some((aiChild) => aiChild.id === sceneTag.id)
         );
-
-        console.log(
-          "AI child tags on scene to remove:",
-          aiChildTagsOnScene.map((t) => t.name)
-        );
-        console.log("=== End AI Tag Removal Debug ===");
-
-        return aiChildTagsOnScene;
       } catch (error) {
         console.error("Error identifying AI tags to remove:", error);
-        // Return empty array if there's an error - don't block the completion process
         return [];
       }
     },
@@ -473,8 +354,6 @@ export const useMarkerOperations = (
   }, [scene, dispatch]);
 
   return {
-    // Data
-    getActionMarkers,
     getMarkerSummary,
     checkAllMarkersApproved,
     

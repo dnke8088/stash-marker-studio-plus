@@ -221,9 +221,7 @@ export default function SearchPage() {
   }, []);
 
   const handleBulkDetectShots = useCallback(async () => {
-    const scenesToProcess = scenes.filter(
-      (scene) => !scene.tags?.some((t) => t.id === shotBoundaryProcessedId)
-    );
+    const scenesToProcess = unprocessedScenes;
     if (scenesToProcess.length === 0) return;
 
     cancelRequestedRef.current = false;
@@ -255,7 +253,7 @@ export default function SearchPage() {
 
     setBulkDetect({ running: false, current: 0, total: 0 });
     dispatch(searchScenes({ query, selectedTags, sortField, sortDirection }));
-  }, [scenes, shotBoundaryProcessedId, showBulkToast, dispatch, query, selectedTags, sortField, sortDirection]);
+  }, [unprocessedScenes, showBulkToast, dispatch, query, selectedTags, sortField, sortDirection]);
 
   const handleCancelBulkDetect = useCallback(() => {
     cancelRequestedRef.current = true;
@@ -477,10 +475,7 @@ export default function SearchPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {scenes.map((scene) => {
-            if (!scene.paths?.screenshot) {
-              console.log("Missing screenshot path for scene:", scene.id);
-              return null;
-            }
+            if (!scene.paths?.screenshot) return null;
 
             return (
               <div

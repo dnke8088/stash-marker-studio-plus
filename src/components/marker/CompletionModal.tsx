@@ -147,10 +147,9 @@ export function CompletionModal({
         if (currentPage === "page1") {
           handlePage1Next();
         } else if (currentPage === "page2" && page2Data) {
-          const { primaryTagsToAdd } = page2Data;
           const effectivePrimaryTagsToAdd = [
-            ...primaryTagsToAdd,
-            ...manualTagsToAdd.filter(t => !primaryTagsToAdd.some(p => p.id === t.id)),
+            ...page2Data.primaryTagsToAdd,
+            ...manualTagsToAdd.filter(t => !page2Data.primaryTagsToAdd.some(p => p.id === t.id)),
           ];
           onPage2Confirm(selectedActions, effectivePrimaryTagsToAdd);
         }

@@ -62,13 +62,11 @@ async function getExistingShotBoundaryMarkerIds(sceneId: string, shotBoundaryTag
 }
 
 async function deleteShotBoundaryMarkers(markerIds: string[], config: GqlConfig): Promise<void> {
-  for (const id of markerIds) {
-    await gql(config, `
-      mutation SceneMarkerDestroy($id: ID!) {
-        sceneMarkerDestroy(id: $id)
-      }
-    `, { id });
-  }
+  await Promise.all(markerIds.map(id => gql(config, `
+    mutation SceneMarkerDestroy($id: ID!) {
+      sceneMarkerDestroy(id: $id)
+    }
+  `, { id })));
 }
 
 async function getTagName(tagId: string, config: GqlConfig): Promise<string> {
@@ -186,13 +184,13 @@ async function createMarkersFromCSV(
     }
   `;
 
-  for (const row of dataRows) {
-    if (row.length < 7) continue;
-    const startTime = parseFloat(row[3]);
-    const endTime = parseFloat(row[6]);
-    if (isNaN(startTime) || isNaN(endTime)) continue;
+  const markerInputs = dataRows
+    .filter(row => row.length >= 7)
+    .map(row => ({ startTime: parseFloat(row[3]), endTime: parseFloat(row[6]) }))
+    .filter(({ startTime, endTime }) => !isNaN(startTime) && !isNaN(endTime));
 
-    await gql(serverConfig, markerMutation, {
+  await Promise.all(markerInputs.map(({ startTime, endTime }) =>
+    gql(serverConfig, markerMutation, {
       input: {
         scene_id: sceneId,
         title: tagName,
@@ -201,8 +199,8 @@ async function createMarkersFromCSV(
         primary_tag_id: config.shotBoundaryConfig.shotBoundary,
         tag_ids: [config.shotBoundaryConfig.sourceShotBoundaryAnalysis],
       },
-    });
-  }
+    })
+  ));
 
   // Tag scene as processed
   await gql(serverConfig, `
@@ -231,11 +229,12 @@ export async function POST(request: NextRequest) {
 
     const videoPath = await getSceneVideoPath(sceneId, serverConfig);
 
-    // Fetch tag name before deleting existing markers (so we fail fast if tag is invalid)
-    const tagName = await getTagName(config.shotBoundaryConfig.shotBoundary, serverConfig);
+    // Fetch tag name and existing markers in parallel (both are independent of each other)
+    const [tagName, existingIds] = await Promise.all([
+      getTagName(config.shotBoundaryConfig.shotBoundary, serverConfig),
+      getExistingShotBoundaryMarkerIds(sceneId, config.shotBoundaryConfig.shotBoundary, serverConfig),
+    ]);
 
-    // Delete existing shot boundary markers before re-running to prevent duplicates
-    const existingIds = await getExistingShotBoundaryMarkerIds(sceneId, config.shotBoundaryConfig.shotBoundary, serverConfig);
     if (existingIds.length > 0) {
       await deleteShotBoundaryMarkers(existingIds, serverConfig);
     }
