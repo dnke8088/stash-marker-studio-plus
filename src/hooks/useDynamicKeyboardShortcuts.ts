@@ -556,6 +556,11 @@ export const useDynamicKeyboardShortcuts = (params: UseDynamicKeyboardShortcutsP
         meta: event.metaKey,
       });
 
+      // Completion modal handles Enter/Escape internally — don't intercept
+      if (params.isCompletionModalOpen) {
+        return;
+      }
+
       if (actionId === 'modal.confirm' || actionId === 'modal.cancel') {
         event.preventDefault();
         event.stopPropagation();
