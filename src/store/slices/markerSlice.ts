@@ -917,6 +917,9 @@ const markerSlice = createSlice({
         state.sceneId = null;
         state.sceneTitle = null;
         state.ui.selectedMarkerId = null;
+        // Reset video playback state so spacebar works correctly on the new scene
+        state.video.isPlaying = false;
+        state.video.pendingPlayPause = null;
       })
       .addCase(initializeMarkerPage.fulfilled, (state, action) => {
         state.initializing = false;
