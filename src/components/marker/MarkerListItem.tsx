@@ -80,7 +80,7 @@ export function MarkerListItem({
     }
   }, [isEditing, marker.seconds, marker.end_seconds]);
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = (tagIdOverride?: string) => {
     // Initialize with marker's current start time; overwritten on successful parse.
     // Note: parsedStart <= 0 is blocked by validation. A marker at exactly 0:00.000
     // will always fail — editing such a marker's start time is a known limitation.
@@ -114,7 +114,7 @@ export function MarkerListItem({
     }
 
     if (!hasError) {
-      void onSaveEditWithTagId(marker, editingTagId, parsedStart, parsedEnd);
+      void onSaveEditWithTagId(marker, tagIdOverride ?? editingTagId, parsedStart, parsedEnd);
     }
   };
 
@@ -279,7 +279,7 @@ export function MarkerListItem({
                     className="flex-1 min-w-32"
                     autoFocus={isEditing}
                     onCancel={onCancelEdit}
-                    onSave={handleSaveEdit}
+                    onSave={(tagId) => handleSaveEdit(tagId)}
                   />
                   <button
                     type="button"
