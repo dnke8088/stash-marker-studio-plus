@@ -237,6 +237,7 @@ export function MarkerListItem({
                     type="text"
                     value={startTimeStr}
                     onChange={(e) => setStartTimeStr(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); handleSaveEdit(); } }}
                     className={`w-24 bg-gray-700 text-white text-xs px-2 py-1 rounded-sm border ${startTimeError ? "border-red-500" : "border-transparent"}`}
                     placeholder="0:00.000"
                     aria-label="Start time"
@@ -256,6 +257,7 @@ export function MarkerListItem({
                     type="text"
                     value={endTimeStr}
                     onChange={(e) => setEndTimeStr(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); handleSaveEdit(); } }}
                     className={`w-24 bg-gray-700 text-white text-xs px-2 py-1 rounded-sm border ${endTimeError ? "border-red-500" : "border-transparent"}`}
                     placeholder="none"
                     aria-label="End time"
@@ -277,6 +279,7 @@ export function MarkerListItem({
                     className="flex-1 min-w-32"
                     autoFocus={isEditing}
                     onCancel={onCancelEdit}
+                    onSave={handleSaveEdit}
                   />
                   <button
                     type="button"
