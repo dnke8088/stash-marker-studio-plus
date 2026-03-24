@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { SceneMarker, Tag, stashappService } from "../../services/StashappService";
 import { CompletionDefaults } from "../../serverConfig";
 
@@ -37,6 +37,7 @@ export function CompletionModal({
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [tagSearchInput, setTagSearchInput] = useState("");
   const [tagHighlightedIndex, setTagHighlightedIndex] = useState(-1);
+  const tagSearchRef = useRef<HTMLInputElement>(null);
   const [selectedActions, setSelectedActions] = useState<CompletionDefaults>({
     deleteVideoCutMarkers: true,
     generateMarkers: true,
@@ -66,7 +67,7 @@ export function CompletionModal({
     }
   }, [page2Data, currentPage]);
 
-  // Fetch all tags when page 2 becomes active
+  // Fetch all tags and focus the tag search input when page 2 becomes active
   useEffect(() => {
     if (currentPage !== "page2") return;
     stashappService.getAllTags().then(result => {
@@ -74,6 +75,8 @@ export function CompletionModal({
     }).catch(err => {
       console.warn("Failed to load tags for search:", err);
     });
+    // Small delay to let the page 2 DOM render before focusing
+    setTimeout(() => tagSearchRef.current?.focus(), 50);
   }, [currentPage]);
 
   const loadDefaults = async () => {
@@ -301,6 +304,7 @@ export function CompletionModal({
 
           <div className="mt-4 relative">
             <input
+              ref={tagSearchRef}
               type="text"
               value={tagSearchInput}
               onChange={e => { setTagSearchInput(e.target.value); setTagHighlightedIndex(-1); }}
@@ -321,6 +325,9 @@ export function CompletionModal({
                     setManualTagsToAdd(prev => [...prev, tag]);
                     setTagSearchInput("");
                     setTagHighlightedIndex(-1);
+                  } else {
+                    // No tag being selected — complete the scene
+                    onPage2Confirm(selectedActions, effectivePrimaryTagsToAdd);
                   }
                 } else if (e.key === "Escape") {
                   setTagSearchInput("");
