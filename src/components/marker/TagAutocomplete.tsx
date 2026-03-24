@@ -169,6 +169,9 @@ export function TagAutocomplete({
       } else if (filteredTags.length > 0) {
         // Select the first matching tag if no specific selection
         handleSelectTag(filteredTags[0]);
+      } else {
+        // No dropdown open / tag already selected — just save
+        if (onSave) onSave();
       }
     } else if (e.key === "Escape") {
       setIsOpen(false);
