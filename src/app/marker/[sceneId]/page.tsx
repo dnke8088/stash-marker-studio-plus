@@ -1158,6 +1158,10 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
     }
   }, [scene, nextSceneId, router, showToast]);
 
+  const handleNextScene = useCallback(() => {
+    if (nextSceneId) router.push(`/marker/${nextSceneId}`);
+  }, [nextSceneId, router]);
+
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <MarkerPageHeader
@@ -1175,7 +1179,7 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
         onDetectShots={handleDetectShots}
         shotBoundaryEnabled={shotBoundaryEnabled}
         hasNextScene={nextSceneId !== null}
-        onNextScene={() => nextSceneId && router.push(`/marker/${nextSceneId}`)}
+        onNextScene={handleNextScene}
         onDeleteScene={() => setIsDeleteSceneModalOpen(true)}
       />
 
