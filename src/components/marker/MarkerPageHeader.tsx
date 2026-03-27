@@ -24,6 +24,9 @@ interface MarkerPageHeaderProps {
   isDetectingShots: boolean;
   onDetectShots: () => void;
   shotBoundaryEnabled: boolean;
+  hasNextScene: boolean;
+  onNextScene: () => void;
+  onDeleteScene: () => void;
 }
 
 export function MarkerPageHeader({
@@ -40,6 +43,9 @@ export function MarkerPageHeader({
   isDetectingShots,
   onDetectShots,
   shotBoundaryEnabled,
+  hasNextScene,
+  onNextScene,
+  onDeleteScene,
 }: MarkerPageHeaderProps) {
   const router = useRouter();
   const stashUrl = useAppSelector(selectStashUrl);
@@ -105,7 +111,8 @@ export function MarkerPageHeader({
           ← Back
         </button>
 
-        {/* Center: title + metadata, grows to fill space */}
+        {/* Center: title + metadata + next button, grows to fill space */}
+        <div className="flex items-center gap-3 min-w-0 flex-1">
         <div className="flex flex-col min-w-0 flex-1">
           {scene ? (
             <a
@@ -140,6 +147,15 @@ export function MarkerPageHeader({
               )}
             </div>
           )}
+        </div>
+        <button
+          onClick={onNextScene}
+          disabled={!hasNextScene}
+          className="bg-blue-500 hover:bg-blue-700 text-white px-3 py-1.5 rounded-sm text-sm transition-colors flex-shrink-0 disabled:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
+          title={hasNextScene ? "Go to next scene" : "No next scene in results"}
+        >
+          Next →
+        </button>
         </div>
 
         {/* Right: action buttons + settings */}
@@ -239,6 +255,14 @@ export function MarkerPageHeader({
                       {correspondingTagsCount}
                     </span>
                   )}
+                </button>
+                <div className="border-t border-gray-600 my-1" />
+                <button
+                  onClick={() => handleMenuAction(onDeleteScene)}
+                  disabled={isLoading}
+                  className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Delete Scene
                 </button>
               </div>
             )}

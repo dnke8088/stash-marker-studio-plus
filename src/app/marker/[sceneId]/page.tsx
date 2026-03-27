@@ -1146,6 +1146,9 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
         isDetectingShots={isDetectingShots}
         onDetectShots={handleDetectShots}
         shotBoundaryEnabled={shotBoundaryEnabled}
+        hasNextScene={false}
+        onNextScene={() => {}}
+        onDeleteScene={() => {}}
       />
 
       {error && (
