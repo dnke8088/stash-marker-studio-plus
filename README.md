@@ -1,6 +1,6 @@
 # Stash Marker Studio Plus
 
-![Stash Marker Studio](stash-marker-studio.png)
+![Marker Editing Screen](MarkerScreen1.png)
 
 > **Enhanced fork** of [stash-marker-studio](https://github.com/MinasukiHikimuna/stash-marker-studio) by MinasukiHikimuna. Fully compatible with the original workflow, with new features added on top.
 
@@ -31,6 +31,8 @@ Edit marker start and end times directly in the marker list. Set either time to 
 
 ### Completion Modal with Tag Preview
 A two-page completion modal shows exactly which tags will be added to and removed from the scene before committing. Page 2 includes manual tag search (autocomplete for any non-AI Stash tag) and lets you remove manually added tags before finalising.
+![Complete Modal Page 1](CompleteModal1.png)
+![Complete Modal Page 2](CompleteModal2.png)
 
 ### Next Scene Navigation
 After completing a scene, navigate directly to the next unreviewed scene from your session list — no need to return to the search page.
@@ -57,7 +59,7 @@ Full Redux Toolkit migration for all marker state management. Navigation uses ma
 
 ### Timeline Navigation
 
-**Swimlane Navigation**: Move between marker categories using arrow keys. Navigation follows the visual swimlane order top to bottom and stops at boundaries without wrapping.
+**Swimlane Navigation**: Move between marker categories using arrow keys. Navigation follows the visual swimlane order top to bottom.
 
 **Timeline Zoom**: Adjust temporal resolution for detailed or broad views. Zoom maintains the playhead as focal point with min/max limits.
 
@@ -67,7 +69,7 @@ Full Redux Toolkit migration for all marker state management. Navigation uses ma
 
 ### Marker Review
 
-**Unprocessed Marker Navigation**: Navigate between markers needing review — both within the current swimlane and globally across all swimlanes. Never wraps unexpectedly.
+**Unprocessed Marker Navigation**: Navigate between markers needing review — both within the current swimlane and globally across all swimlanes. 
 
 **Video Playback**: Play/pause, seek, and frame-precise stepping. Frame operations detect and use the video's actual frame rate.
 
