@@ -857,6 +857,23 @@ export class StashappService {
     await this.fetchGraphQL(mutation, variables);
   }
 
+  async deleteScene(sceneId: string): Promise<void> {
+    const mutation = `
+      mutation ScenesDestroy($input: ScenesDestroyInput!) {
+        scenesDestroy(input: $input)
+      }
+    `;
+
+    const variables = {
+      input: {
+        ids: [sceneId],
+        delete_file: true,
+      },
+    };
+
+    await this.fetchGraphQL(mutation, variables);
+  }
+
   async updateMarkerTimes(
     markerId: string,
     seconds: number,
