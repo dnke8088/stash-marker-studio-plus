@@ -16,6 +16,7 @@ import { MarkerSummary } from "../../../components/marker/MarkerSummary";
 import { MarkerList } from "../../../components/marker/MarkerList";
 import { CompletionModal } from "../../../components/marker/CompletionModal";
 import { DeleteRejectedModal } from "../../../components/marker/DeleteRejectedModal";
+import { DeleteSceneModal } from "../../../components/marker/DeleteSceneModal";
 import { useAppSelector, useAppDispatch } from "../../../store/hooks";
 import { useMarkerNavigation } from "../../../hooks/useMarkerNavigation";
 import { useTimelineZoom } from "../../../hooks/useTimelineZoom";
@@ -130,6 +131,8 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
   );
 
   const [isDetectingShots, setIsDetectingShots] = useState(false);
+  const [isDeleteSceneModalOpen, setIsDeleteSceneModalOpen] = useState(false);
+  const [isDeletingScene, setIsDeletingScene] = useState(false);
   const [localShotBoundaryProcessed, setLocalShotBoundaryProcessed] = useState(false);
   const isShotBoundaryProcessed = localShotBoundaryProcessed || !!scene?.tags?.some(
     (t) => t.id === shotBoundaryConfig.shotBoundaryProcessed
@@ -1130,6 +1133,31 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
     }
   }, [scene, dispatch, showToast]);
 
+  const handleDeleteScene = useCallback(async () => {
+    if (!scene?.id) return;
+    setIsDeletingScene(true);
+    try {
+      await stashappService.deleteScene(scene.id);
+      // Remove deleted scene from session list so Next skips it
+      try {
+        const list: string[] = JSON.parse(sessionStorage.getItem("scene-list") ?? "[]");
+        const updated = list.filter(id => id !== scene.id);
+        sessionStorage.setItem("scene-list", JSON.stringify(updated));
+      } catch {
+        // sessionStorage failure is non-fatal
+      }
+      if (nextSceneId) {
+        router.push(`/marker/${nextSceneId}`);
+      } else {
+        router.push("/search");
+      }
+    } catch (err) {
+      showToast(`Failed to delete scene: ${err instanceof Error ? err.message : String(err)}`, "error");
+      setIsDeletingScene(false);
+      setIsDeleteSceneModalOpen(false);
+    }
+  }, [scene, nextSceneId, router, showToast]);
+
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <MarkerPageHeader
@@ -1146,9 +1174,9 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
         isDetectingShots={isDetectingShots}
         onDetectShots={handleDetectShots}
         shotBoundaryEnabled={shotBoundaryEnabled}
-        hasNextScene={false}
-        onNextScene={() => {}}
-        onDeleteScene={() => {}}
+        hasNextScene={nextSceneId !== null}
+        onNextScene={() => nextSceneId && router.push(`/marker/${nextSceneId}`)}
+        onDeleteScene={() => setIsDeleteSceneModalOpen(true)}
       />
 
       {error && (
@@ -1233,6 +1261,14 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
         rejectedMarkers={deleteRejectedModalData?.rejectedMarkers || []}
         onCancel={() => dispatch(closeModal())}
         onConfirm={confirmDeleteRejectedMarkers}
+      />
+
+      <DeleteSceneModal
+        isOpen={isDeleteSceneModalOpen}
+        sceneName={scene?.title || scene?.files?.[0]?.basename || scene?.id || "this scene"}
+        isDeleting={isDeletingScene}
+        onCancel={() => setIsDeleteSceneModalOpen(false)}
+        onConfirm={handleDeleteScene}
       />
 
       <CorrespondingTagConversionModal
