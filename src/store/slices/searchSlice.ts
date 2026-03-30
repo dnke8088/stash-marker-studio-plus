@@ -295,6 +295,8 @@ const searchSlice = createSlice({
         state.error = action.error.message || 'Failed to search scenes';
         // Keep scenes empty on error so user doesn't see stale results
         state.scenes = [];
+        state.filteredCount = null;
+        state.totalCount = null;
       });
   },
 });
