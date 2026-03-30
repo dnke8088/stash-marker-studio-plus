@@ -462,7 +462,7 @@ export default function SearchPage() {
 
         {!loading && hasFilters && filteredCount !== null && totalCount !== null && (
           <p className="text-sm text-gray-400 mb-4">
-            Showing{" "}
+            Matched{" "}
             <span className="text-white font-semibold">
               {filteredCount.toLocaleString()}
             </span>{" "}
