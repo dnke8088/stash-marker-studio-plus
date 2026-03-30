@@ -25,7 +25,7 @@ export function DeleteSceneModal({
         <h3 className="text-xl font-bold mb-4 text-red-400">Delete Scene</h3>
         <p className="mb-2 text-white">
           This will permanently delete{" "}
-          <span className="font-bold">{sceneName}</span> and all its files from
+          <span className="font-bold break-all">{sceneName}</span> and all its files from
           Stash.
         </p>
         <p className="mb-6 text-red-400 font-medium">This cannot be undone.</p>
