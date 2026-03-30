@@ -70,11 +70,15 @@ export function VideoPlayer({ className = "" }: VideoPlayerProps) {
     const video = videoRef.current;
     if (!video || !scene) return;
 
-    const url = `${stashUrl}/scene/${scene.id}/stream.m3u8?apikey=${stashApiKey}`;
+    const url = `${stashUrl}/scene/${scene.id}/stream.m3u8${stashApiKey ? `?apikey=${stashApiKey}` : ""}`;
 
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
       // Safari: native HLS support — set src directly
       video.src = url;
+      return () => {
+        video.removeAttribute("src");
+        video.load();
+      };
     } else if (Hls.isSupported()) {
       // Chrome, Firefox, etc.: use hls.js
       const hls = new Hls();
