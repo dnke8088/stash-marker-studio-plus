@@ -11,6 +11,7 @@ import {
   clearPendingPlayPause,
 } from "@/store/slices/markerSlice";
 import { selectStashUrl, selectStashApiKey } from "@/store/slices/configSlice";
+import Hls from "hls.js";
 
 interface VideoPlayerProps {
   className?: string;
@@ -64,6 +65,25 @@ export function VideoPlayer({ className = "" }: VideoPlayerProps) {
     if (savedMuted !== null) video.muted = savedMuted === "true";
   }, []);
 
+  // Set up HLS source — handles both native HLS (Safari) and hls.js (Chrome/Firefox)
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !scene) return;
+
+    const url = `${stashUrl}/scene/${scene.id}/stream.m3u8?apikey=${stashApiKey}`;
+
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      // Safari: native HLS support — set src directly
+      video.src = url;
+    } else if (Hls.isSupported()) {
+      // Chrome, Firefox, etc.: use hls.js
+      const hls = new Hls();
+      hls.loadSource(url);
+      hls.attachMedia(video);
+      return () => hls.destroy();
+    }
+  }, [scene, stashUrl, stashApiKey]);
+
   // Set up video event listeners to dispatch metadata updates to Redux
   useEffect(() => {
     const video = videoRef.current;
@@ -116,7 +136,6 @@ export function VideoPlayer({ className = "" }: VideoPlayerProps) {
   return (
     <video
       ref={videoRef}
-      src={`${stashUrl}/scene/${scene.id}/stream?apikey=${stashApiKey}`}
       controls
       className={`w-full h-full object-contain ${className}`}
       tabIndex={-1}
