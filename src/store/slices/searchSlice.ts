@@ -35,6 +35,8 @@ export interface SearchState {
   
   // Results
   scenes: SceneWithMarkers[];
+  filteredCount: number | null;
+  totalCount: number | null;
   
   // UI state
   loading: boolean;
@@ -60,6 +62,8 @@ const initialState: SearchState = {
   tagSearchQuery: '',
   tagSuggestions: [],
   scenes: [],
+  filteredCount: null,
+  totalCount: null,
   loading: false,
   error: null,
   tagsLoading: false,
@@ -124,15 +128,23 @@ export const searchScenes = createAsyncThunk(
     const excludedTagIds = params.selectedTags
       .filter(tag => tag.type === 'excluded')
       .map(tag => tag.id);
-    
-    const result = await stashappService.searchScenes(
-      params.query,
-      includedTagIds,
-      params.sortField,
-      params.sortDirection,
-      excludedTagIds
-    );
-    return result.findScenes.scenes;
+
+    const [scenesResult, totalCount] = await Promise.all([
+      stashappService.searchScenes(
+        params.query,
+        includedTagIds,
+        params.sortField,
+        params.sortDirection,
+        excludedTagIds
+      ),
+      stashappService.getTotalSceneCount(),
+    ]);
+
+    return {
+      scenes: scenesResult.findScenes.scenes,
+      filteredCount: scenesResult.findScenes.count,
+      totalCount,
+    };
   }
 );
 
@@ -267,13 +279,16 @@ const searchSlice = createSlice({
       .addCase(searchScenes.pending, (state) => {
         state.loading = true;
         state.error = null;
-        state.hasSearched = true; // Mark that a search has been attempted
-        // Clear previous results immediately when starting a new search
+        state.hasSearched = true;
         state.scenes = [];
+        state.filteredCount = null;
+        state.totalCount = null;
       })
       .addCase(searchScenes.fulfilled, (state, action) => {
         state.loading = false;
-        state.scenes = action.payload;
+        state.scenes = action.payload.scenes;
+        state.filteredCount = action.payload.filteredCount;
+        state.totalCount = action.payload.totalCount;
       })
       .addCase(searchScenes.rejected, (state, action) => {
         state.loading = false;
@@ -318,5 +333,9 @@ export const selectInitialized = (state: { search: SearchState }) => state.searc
 export const selectInitializing = (state: { search: SearchState }) => state.search.initializing;
 export const selectInitializationError = (state: { search: SearchState }) => state.search.initializationError;
 export const selectHasSearched = (state: { search: SearchState }) => state.search.hasSearched;
+export const selectSceneCounts = (state: { search: SearchState }) => ({
+  filteredCount: state.search.filteredCount,
+  totalCount: state.search.totalCount,
+});
 
 export default searchSlice.reducer;
