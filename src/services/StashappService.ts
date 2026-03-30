@@ -579,6 +579,21 @@ export class StashappService {
     return result.data;
   }
 
+  async getTotalSceneCount(): Promise<number> {
+    const query = `
+      query FindScenesCount {
+        findScenes(filter: { per_page: 0 }) {
+          count
+        }
+      }
+    `;
+    const result = await this.fetchGraphQL<{ data: { findScenes: { count: number } } }>(
+      query,
+      {}
+    );
+    return result.data.findScenes.count;
+  }
+
   addApiKeysToMediaUrls(scenes: Scene[]): Scene[] {
     if (!this.apiKey) {
       throw new Error("Not authenticated");
