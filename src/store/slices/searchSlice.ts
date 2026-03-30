@@ -335,9 +335,7 @@ export const selectInitialized = (state: { search: SearchState }) => state.searc
 export const selectInitializing = (state: { search: SearchState }) => state.search.initializing;
 export const selectInitializationError = (state: { search: SearchState }) => state.search.initializationError;
 export const selectHasSearched = (state: { search: SearchState }) => state.search.hasSearched;
-export const selectSceneCounts = (state: { search: SearchState }) => ({
-  filteredCount: state.search.filteredCount,
-  totalCount: state.search.totalCount,
-});
+export const selectFilteredCount = (state: { search: SearchState }) => state.search.filteredCount;
+export const selectTotalCount = (state: { search: SearchState }) => state.search.totalCount;
 
 export default searchSlice.reducer;

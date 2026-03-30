@@ -20,7 +20,8 @@ import {
   selectInitializing,
   selectInitializationError,
   selectHasSearched,
-  selectSceneCounts,
+  selectFilteredCount,
+  selectTotalCount,
   SortField,
 } from "@/store/slices/searchSlice";
 import { stashappService, Tag } from "@/services/StashappService";
@@ -84,7 +85,8 @@ export default function SearchPage() {
   const hasSearched = useAppSelector(selectHasSearched);
   const shotBoundaryConfig = useAppSelector(selectShotBoundaryConfig);
   const shotBoundaryEnabled = useAppSelector(selectShotBoundaryEnabled);
-  const { filteredCount, totalCount } = useAppSelector(selectSceneCounts);
+  const filteredCount = useAppSelector(selectFilteredCount);
+  const totalCount = useAppSelector(selectTotalCount);
   const hasFilters = query.trim().length > 0 || selectedTags.length > 0;
 
   const [bulkDetect, setBulkDetect] = useState({
