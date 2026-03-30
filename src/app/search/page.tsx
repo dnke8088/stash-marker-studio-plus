@@ -20,6 +20,7 @@ import {
   selectInitializing,
   selectInitializationError,
   selectHasSearched,
+  selectSceneCounts,
   SortField,
 } from "@/store/slices/searchSlice";
 import { stashappService, Tag } from "@/services/StashappService";
@@ -83,6 +84,8 @@ export default function SearchPage() {
   const hasSearched = useAppSelector(selectHasSearched);
   const shotBoundaryConfig = useAppSelector(selectShotBoundaryConfig);
   const shotBoundaryEnabled = useAppSelector(selectShotBoundaryEnabled);
+  const { filteredCount, totalCount } = useAppSelector(selectSceneCounts);
+  const hasFilters = query.trim().length > 0 || selectedTags.length > 0;
 
   const [bulkDetect, setBulkDetect] = useState({
     running: false,
@@ -453,6 +456,20 @@ export default function SearchPage() {
           <div className="mb-4 p-3 bg-red-800 text-red-200 rounded">
             Error: {error}
           </div>
+        )}
+
+        {!loading && hasFilters && filteredCount !== null && totalCount !== null && (
+          <p className="text-sm text-gray-400 mb-4">
+            Showing{" "}
+            <span className="text-white font-semibold">
+              {filteredCount.toLocaleString()}
+            </span>{" "}
+            of{" "}
+            <span className="text-white font-semibold">
+              {totalCount.toLocaleString()}
+            </span>{" "}
+            scenes
+          </p>
         )}
       </div>
 
