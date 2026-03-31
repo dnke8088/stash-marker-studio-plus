@@ -510,7 +510,7 @@ export const defaultShortcuts: KeyboardShortcut[] = [
   // System Actions
   {
     id: 'system.undo',
-    bindings: [{ key: 'z', modifiers: { ctrl: true } }],
+    bindings: [{ key: 'z', modifiers: { shift: true } }],
     description: 'Undo last marker action',
     category: 'system',
     action: { type: 'function', functionName: 'undoLastAction' },

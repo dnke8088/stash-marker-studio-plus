@@ -66,8 +66,8 @@ describe('KeyboardShortcutService', () => {
       expect(kAction).toBe('video.playPause');
     });
 
-    it('should find system.undo for Ctrl+Z', () => {
-      const actionId = service.getActionForKeyBinding('z', { ctrl: true });
+    it('should find system.undo for Shift+Z', () => {
+      const actionId = service.getActionForKeyBinding('z', { shift: true });
       expect(actionId).toBe('system.undo');
     });
   });
