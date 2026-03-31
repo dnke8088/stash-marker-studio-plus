@@ -9,6 +9,7 @@ import {
 import { KeyboardShortcutsModal } from "../../components/KeyboardShortcutsModal";
 import { Timeline, TimelineRef } from "../../../components/timeline-redux";
 import { VideoPlayer } from "../../../components/marker/video/VideoPlayer";
+import { VideoControls } from "../../../components/marker/video/VideoControls";
 import { MarkerWithTrack, TagGroup } from "../../../core/marker/types";
 import { CorrespondingTagConversionModal } from "../../components/CorrespondingTagConversionModal";
 import { MarkerPageHeader } from "../../../components/marker/MarkerPageHeader";
@@ -55,8 +56,6 @@ import {
   setDuplicatingMarker,
   setMarkers,
   setIncorrectMarkers,
-  setCurrentVideoTime,
-  setVideoDuration,
   initializeMarkerPage,
   loadMarkers,
   updateMarkerTag,
@@ -116,7 +115,7 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
   const isCompletionModalOpen = useAppSelector(selectIsCompletionModalOpen);
   
   const markerListRef = useRef<HTMLDivElement>(null);
-  // Temporary ref for video element compatibility - can be removed when VideoPlayer fully handles all video interactions
+  // Ref passed to VideoPlayer and VideoControls for direct video element access
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
   const timelineRef = useRef<TimelineRef>(null);
   const router = useRouter();
@@ -1035,28 +1034,6 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
     }
   }, [selectedMarkerId]); // Also depend on actionMarkers.length to ensure it runs after markers are updated
 
-  // Update video duration and current time
-  useEffect(() => {
-    const video = videoElementRef.current;
-    if (video) {
-      const handleLoadedMetadata = () => {
-        if (videoElementRef.current) {
-          dispatch(setVideoDuration(videoElementRef.current.duration));
-        }
-      };
-      video.addEventListener(
-        "loadedmetadata",
-        handleLoadedMetadata
-      );
-      return () => {
-        video.removeEventListener(
-          "loadedmetadata",
-          handleLoadedMetadata
-        );
-      };
-    }
-  }, [dispatch]);
-
   // Load incorrect markers when scene changes
   useEffect(() => {
     if (scene?.id) {
@@ -1070,35 +1047,6 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
   useEffect(() => {
     setLocalShotBoundaryProcessed(false);
   }, [scene?.id]);
-
-  const updateCurrentTime = useCallback(() => {
-    if (videoElementRef.current) {
-      dispatch(setCurrentVideoTime(videoElementRef.current.currentTime));
-    }
-  }, [dispatch]);
-
-  // Effect to update current time from video
-  useEffect(() => {
-    const video = videoElementRef.current;
-    if (video) {
-      const handleLoadedMetadata = () => {
-        dispatch(setVideoDuration(video.duration));
-      };
-
-      video.addEventListener("loadedmetadata", handleLoadedMetadata);
-      video.addEventListener("timeupdate", updateCurrentTime);
-      video.addEventListener("seeking", updateCurrentTime);
-      video.addEventListener("seeked", updateCurrentTime);
-
-      // Clean up listeners
-      return () => {
-        video.removeEventListener("loadedmetadata", handleLoadedMetadata);
-        video.removeEventListener("timeupdate", updateCurrentTime);
-        video.removeEventListener("seeking", updateCurrentTime);
-        video.removeEventListener("seeked", updateCurrentTime);
-      };
-    }
-  }, [updateCurrentTime, dispatch]);
 
   useEffect(() => {
     if (scene) {
@@ -1234,7 +1182,8 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
                 </div>
               </div>
               <div className="w-2/3 flex flex-col min-h-0 bg-black">
-                <VideoPlayer videoRef={videoElementRef} className="w-full h-full object-contain" />
+                <VideoPlayer videoRef={videoElementRef} className="w-full flex-1 object-contain" />
+                <VideoControls videoRef={videoElementRef} />
               </div>
             </div>
 
