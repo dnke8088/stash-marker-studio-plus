@@ -26,6 +26,10 @@ function makeVideoRef(overrides: Partial<HTMLVideoElement> = {}) {
 }
 
 describe("VideoControls", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   it("renders play button when paused", () => {
     render(
       <Provider store={makeStore()}>
