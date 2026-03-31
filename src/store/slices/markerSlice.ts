@@ -7,6 +7,8 @@ import {
 } from "@/services/StashappService";
 import type { IncorrectMarker } from "@/utils/incorrectMarkerStorage";
 import { loadMarkerGroups } from "./configSlice";
+import { getUndoSnapshot, clearUndoSnapshot } from '../middleware/undoMiddleware';
+import { isMarkerConfirmed, isMarkerRejected } from '../../core/marker/markerLogic';
 
 // Modal state types
 export type CompletionModalData = {
@@ -455,6 +457,71 @@ export const resetMarker = createAsyncThunk(
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to reset marker"
       );
+    }
+  }
+);
+
+// Undo the last undoable action
+export const undoLastAction = createAsyncThunk(
+  'marker/undoLastAction',
+  async (
+    { showToast }: { showToast: (message: string, type: 'success' | 'error') => void },
+    { dispatch, getState }
+  ) => {
+    const snapshot = getUndoSnapshot();
+
+    if (!snapshot) {
+      showToast('Nothing to undo', 'error');
+      return;
+    }
+
+    if (snapshot.type === 'navigation') {
+      clearUndoSnapshot();
+      dispatch(setSelectedMarkerId(snapshot.previousSelectedMarkerId));
+      return;
+    }
+
+    // markerState snapshot
+    const { marker, selectedMarkerId } = snapshot;
+    const state = (getState() as { marker: MarkerState }).marker;
+    const currentMarker = state.markers.find((m) => m.id === marker.id);
+
+    if (!currentMarker) {
+      showToast('Cannot undo — marker no longer exists', 'error');
+      clearUndoSnapshot();
+      return;
+    }
+
+    const sceneId = state.sceneId;
+    if (!sceneId) return;
+
+    try {
+      // Determine which reversal to apply based on the snapshot's prior marker state
+      if (isMarkerConfirmed(marker)) {
+        // Was confirmed before the action — restore confirmation
+        await dispatch(confirmMarker({ sceneId, markerId: marker.id })).unwrap();
+      } else if (isMarkerRejected(marker)) {
+        // Was rejected before the action — restore rejection
+        await dispatch(rejectMarker({ sceneId, markerId: marker.id })).unwrap();
+      } else if (marker.seconds !== currentMarker.seconds || marker.end_seconds !== currentMarker.end_seconds) {
+        // Times changed — restore original times
+        await dispatch(updateMarkerTimes({
+          sceneId,
+          markerId: marker.id,
+          startTime: marker.seconds,
+          endTime: marker.end_seconds ?? null,
+        })).unwrap();
+      } else {
+        // Was unprocessed before — reset to unprocessed
+        await dispatch(resetMarker({ sceneId, markerId: marker.id })).unwrap();
+      }
+
+      clearUndoSnapshot();
+      // Restore marker selection to where it was before the action
+      dispatch(setSelectedMarkerId(selectedMarkerId));
+    } catch {
+      showToast('Undo failed', 'error');
+      // Leave snapshot in place so user can retry
     }
   }
 );
