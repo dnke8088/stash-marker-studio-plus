@@ -16,6 +16,7 @@ import {
   setDuplicatingMarker,
   setError,
   createMarker,
+  addAvailableTag,
 } from "../../store/slices/markerSlice";
 import { selectMarkerStatusConfirmed, selectMarkerStatusRejected } from "@/store/slices/configSlice";
 import { type Tag } from "../../services/StashappService";
@@ -143,6 +144,7 @@ export function MarkerListItem({
           marker={marker}
           availableTags={availableTags}
           videoElement={videoElementRef.current}
+          onTagCreated={(tag) => dispatch(addAvailableTag(tag))}
           onSave={async (newStart, newEnd, newTagId) => {
             try {
               const isDuplicating = marker.id === "temp-duplicate";
@@ -283,6 +285,7 @@ export function MarkerListItem({
                     autoFocus={isEditing}
                     onCancel={onCancelEdit}
                     onSave={(tagId) => handleSaveEdit(tagId)}
+                    onTagCreated={(tag) => dispatch(addAvailableTag(tag))}
                   />
                   <button
                     type="button"
