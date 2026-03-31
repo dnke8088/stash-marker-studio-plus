@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
-  selectCurrentVideoTime,
   selectVideoDuration,
   selectVideoIsPlaying,
   seekToTime,
@@ -17,9 +16,11 @@ interface VideoControlsProps {
 
 export function VideoControls({ videoRef }: VideoControlsProps) {
   const dispatch = useAppDispatch();
-  const currentTime = useAppSelector(selectCurrentVideoTime);
   const duration = useAppSelector(selectVideoDuration);
   const isPlaying = useAppSelector(selectVideoIsPlaying);
+
+  const seekBarRef = useRef<HTMLInputElement>(null);
+  const timeDisplayRef = useRef<HTMLSpanElement>(null);
 
   const [volume, setVolume] = useState(() => {
     const saved = localStorage.getItem("player-volume");
@@ -39,6 +40,28 @@ export function VideoControls({ videoRef }: VideoControlsProps) {
     video.volume = volume;
     video.muted = muted;
   }, [volume, muted, videoRef]);
+
+  // Update seek bar and time display directly from video events — bypasses Redux re-renders
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const update = () => {
+      const t = video.currentTime;
+      const d = video.duration || 0;
+      if (seekBarRef.current) seekBarRef.current.value = String(t);
+      if (timeDisplayRef.current) {
+        timeDisplayRef.current.textContent = `${formatSeconds(t)} / ${formatSeconds(d)}`;
+      }
+    };
+
+    video.addEventListener("timeupdate", update);
+    video.addEventListener("seeked", update);
+    return () => {
+      video.removeEventListener("timeupdate", update);
+      video.removeEventListener("seeked", update);
+    };
+  }, [videoRef]);
 
   const handleSeek = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,8 +95,6 @@ export function VideoControls({ videoRef }: VideoControlsProps) {
     dispatch(togglePlayPause());
   }, [dispatch]);
 
-  const timeDisplay = `${formatSeconds(currentTime)} / ${formatSeconds(duration ?? 0)}`;
-
   return (
     <div className="flex items-center gap-2 bg-gray-800 px-3 py-1.5">
       {/* Play/pause */}
@@ -101,21 +122,25 @@ export function VideoControls({ videoRef }: VideoControlsProps) {
         )}
       </button>
 
-      {/* Seek bar */}
+      {/* Seek bar — uncontrolled, updated directly via DOM ref */}
       <input
+        ref={seekBarRef}
         type="range"
         aria-label="Seek"
         min={0}
         max={duration ?? 0}
         step={0.1}
-        value={currentTime}
+        defaultValue={0}
         onChange={handleSeek}
         className="flex-1 h-1 accent-blue-500 cursor-pointer"
       />
 
-      {/* Time display */}
-      <span className="text-gray-400 text-xs font-mono flex-shrink-0 tabular-nums">
-        {timeDisplay}
+      {/* Time display — updated directly via DOM ref */}
+      <span
+        ref={timeDisplayRef}
+        className="text-gray-400 text-xs font-mono flex-shrink-0 tabular-nums"
+      >
+        {`${formatSeconds(0)} / ${formatSeconds(duration ?? 0)}`}
       </span>
 
       {/* Mute toggle */}

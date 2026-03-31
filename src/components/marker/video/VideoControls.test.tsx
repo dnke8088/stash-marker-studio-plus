@@ -20,8 +20,12 @@ function makeVideoRef(overrides: Partial<HTMLVideoElement> = {}) {
   const video = {
     volume: 0.8,
     muted: false,
+    currentTime: 0,
+    duration: 0,
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
     ...overrides,
-  } as HTMLVideoElement;
+  } as unknown as HTMLVideoElement;
   return { current: video } as React.RefObject<HTMLVideoElement | null>;
 }
 
@@ -50,14 +54,14 @@ describe("VideoControls", () => {
     expect(screen.getByRole("button", { name: /pause/i })).toBeInTheDocument();
   });
 
-  it("displays formatted current time and duration", () => {
+  it("displays formatted duration in time display", () => {
     render(
       <Provider store={makeStore()}>
         <VideoControls videoRef={makeVideoRef()} />
       </Provider>
     );
-    // 65s = 01:05, 252s = 04:12 (formatSeconds zero-pads minutes)
-    expect(screen.getByText("01:05 / 04:12")).toBeInTheDocument();
+    // Time display initialises to 00:00 / 04:12 (duration from Redux, currentTime from video events)
+    expect(screen.getByText("00:00 / 04:12")).toBeInTheDocument();
   });
 
   it("dispatches togglePlayPause on play button click", () => {
@@ -74,14 +78,14 @@ describe("VideoControls", () => {
     );
   });
 
-  it("renders seek bar with correct value", () => {
+  it("renders seek bar with duration as max", () => {
     render(
       <Provider store={makeStore()}>
         <VideoControls videoRef={makeVideoRef()} />
       </Provider>
     );
     const seekBar = screen.getByRole("slider", { name: /seek/i });
-    expect(seekBar).toHaveValue("65");
+    expect(seekBar).toHaveAttribute("max", "252");
   });
 
   it("renders volume slider with value from videoRef", () => {
