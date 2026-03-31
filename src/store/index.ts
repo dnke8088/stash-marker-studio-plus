@@ -3,6 +3,7 @@ import searchReducer from './slices/searchSlice';
 import markerReducer from './slices/markerSlice';
 import configReducer from './slices/configSlice';
 import { persistenceMiddleware } from './middleware/persistenceMiddleware';
+import { undoMiddleware } from './middleware/undoMiddleware';
 
 export const store = configureStore({
   reducer: {
@@ -16,7 +17,7 @@ export const store = configureStore({
         // Ignore these action types
         ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
       },
-    }).concat(persistenceMiddleware),
+    }).concat(undoMiddleware, persistenceMiddleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;
