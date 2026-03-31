@@ -61,9 +61,14 @@ describe('KeyboardShortcutService', () => {
       // Video play/pause has both Space and K
       const spaceAction = service.getActionForKeyBinding(' ');
       const kAction = service.getActionForKeyBinding('k');
-      
+
       expect(spaceAction).toBe('video.playPause');
       expect(kAction).toBe('video.playPause');
+    });
+
+    it('should find system.undo for Ctrl+Z', () => {
+      const actionId = service.getActionForKeyBinding('z', { ctrl: true });
+      expect(actionId).toBe('system.undo');
     });
   });
 
