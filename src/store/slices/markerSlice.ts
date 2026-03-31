@@ -493,7 +493,13 @@ export const undoLastAction = createAsyncThunk(
     }
 
     const sceneId = state.sceneId;
-    if (!sceneId) return;
+    if (!sceneId) {
+      showToast('Cannot undo — no scene loaded', 'error');
+      clearUndoSnapshot();
+      return;
+    }
+
+    clearUndoSnapshot(); // clear BEFORE dispatching so the reversal doesn't re-snapshot
 
     try {
       // Determine which reversal to apply based on the snapshot's prior marker state
@@ -516,12 +522,11 @@ export const undoLastAction = createAsyncThunk(
         await dispatch(resetMarker({ sceneId, markerId: marker.id })).unwrap();
       }
 
-      clearUndoSnapshot();
       // Restore marker selection to where it was before the action
       dispatch(setSelectedMarkerId(selectedMarkerId));
+      clearUndoSnapshot(); // clear again — setSelectedMarkerId above creates a navigation snapshot
     } catch {
       showToast('Undo failed', 'error');
-      // Leave snapshot in place so user can retry
     }
   }
 );
