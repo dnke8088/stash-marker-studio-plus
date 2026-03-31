@@ -1234,7 +1234,7 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
                 </div>
               </div>
               <div className="w-2/3 flex flex-col min-h-0 bg-black">
-                <VideoPlayer className="w-full h-full object-contain" />
+                <VideoPlayer videoRef={videoElementRef} className="w-full h-full object-contain" />
               </div>
             </div>
 
