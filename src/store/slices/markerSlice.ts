@@ -785,7 +785,9 @@ const markerSlice = createSlice({
     },
 
     addAvailableTag: (state, action: PayloadAction<Tag>) => {
-      state.availableTags.push(action.payload);
+      if (!state.availableTags.some(t => t.id === action.payload.id)) {
+        state.availableTags.push(action.payload);
+      }
     },
 
     // UI actions - selection
