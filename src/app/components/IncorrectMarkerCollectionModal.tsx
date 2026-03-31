@@ -179,7 +179,7 @@ export const IncorrectMarkerCollectionModal: React.FC<
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-gray-800 p-6 rounded-lg max-w-2xl w-full">
         <h3 className="text-xl font-bold mb-4">Collect AI Feedback</h3>
         {currentSceneMarkers.length > 0 ? (
