@@ -196,7 +196,7 @@ export function TagAutocomplete({
       } else if (showCreateOption) {
         // No matching tag and create option is active — Enter creates the tag
         void handleCreateTag();
-      } else if (filteredTags.length > 0) {
+      } else if (isOpen && filteredTags.length > 0) {
         handleSelectTag(filteredTags[0]);
       } else {
         if (onSave) onSave();
