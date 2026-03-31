@@ -306,7 +306,11 @@ export function CompletionModal({
               className="w-full"
               autoFocus={true}
               onSave={(tagId) => {
-                if (!tagId) return;
+                if (!tagId) {
+                  // Enter with no tag selected — complete the scene (matches old bespoke behavior)
+                  onPage2Confirm(selectedActions, effectivePrimaryTagsToAdd);
+                  return;
+                }
                 const tag = allTags.find(t => t.id === tagId);
                 if (!tag) return;
                 setManualTagsToAdd(prev => [...prev, tag]);
