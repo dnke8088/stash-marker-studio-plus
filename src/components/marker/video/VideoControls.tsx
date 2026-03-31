@@ -132,6 +132,8 @@ export function VideoControls({ videoRef }: VideoControlsProps) {
         step={0.1}
         defaultValue={0}
         onChange={handleSeek}
+        onMouseUp={(e) => e.currentTarget.blur()}
+        tabIndex={-1}
         className="flex-1 h-1 accent-blue-500 cursor-pointer"
       />
 
@@ -177,6 +179,8 @@ export function VideoControls({ videoRef }: VideoControlsProps) {
         step={0.05}
         value={muted ? 0 : volume}
         onChange={handleVolumeChange}
+        onMouseUp={(e) => e.currentTarget.blur()}
+        tabIndex={-1}
         className="w-20 h-1 accent-blue-500 cursor-pointer"
       />
     </div>
