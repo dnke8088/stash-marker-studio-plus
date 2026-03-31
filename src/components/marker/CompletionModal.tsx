@@ -1,8 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { SceneMarker, Tag, stashappService } from "../../services/StashappService";
 import { CompletionDefaults } from "../../serverConfig";
+import { TagAutocomplete } from "./TagAutocomplete";
+import { useAppDispatch } from "../../store/hooks";
+import { addAvailableTag } from "../../store/slices/markerSlice";
 
 type ModalPage = "page1" | "loading" | "page2";
 
@@ -33,11 +36,10 @@ export function CompletionModal({
   onPage1Confirm,
   onPage2Confirm,
 }: CompletionModalProps) {
+  const dispatch = useAppDispatch();
+  const [tagSearchKey, setTagSearchKey] = useState(0);
   const [manualTagsToAdd, setManualTagsToAdd] = useState<Tag[]>([]);
   const [allTags, setAllTags] = useState<Tag[]>([]);
-  const [tagSearchInput, setTagSearchInput] = useState("");
-  const [tagHighlightedIndex, setTagHighlightedIndex] = useState(-1);
-  const tagSearchRef = useRef<HTMLInputElement>(null);
   const [selectedActions, setSelectedActions] = useState<CompletionDefaults>({
     deleteVideoCutMarkers: true,
     generateMarkers: true,
@@ -55,7 +57,6 @@ export function CompletionModal({
       setCurrentPage("page1");
       setManualTagsToAdd([]);
       setAllTags([]);
-      setTagSearchInput("");
       loadDefaults();
     }
   }, [isOpen]);
@@ -75,8 +76,6 @@ export function CompletionModal({
     }).catch(err => {
       console.warn("Failed to load tags for search:", err);
     });
-    // Small delay to let the page 2 DOM render before focusing
-    setTimeout(() => tagSearchRef.current?.focus(), 50);
   }, [currentPage]);
 
   const loadDefaults = async () => {
@@ -219,14 +218,6 @@ export function CompletionModal({
       ...primaryTagsToAdd,
       ...manualTagsToAdd.filter(t => !primaryTagsToAdd.some(p => p.id === t.id)),
     ];
-    const tagSuggestions: Tag[] =
-      tagSearchInput.length < 2
-        ? []
-        : allTags.filter(t =>
-            !t.name.endsWith("_AI") &&
-            t.name.toLowerCase().includes(tagSearchInput.toLowerCase()) &&
-            !effectivePrimaryTagsToAdd.some(p => p.id === t.id)
-          ).slice(0, 10);
     return (
       <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
         <div className="bg-gray-800 p-6 rounded-lg max-w-2xl w-full relative">
@@ -302,59 +293,32 @@ export function CompletionModal({
             </div>
           </div>
 
-          <div className="mt-4 relative">
-            <input
-              ref={tagSearchRef}
-              type="text"
-              value={tagSearchInput}
-              onChange={e => { setTagSearchInput(e.target.value); setTagHighlightedIndex(-1); }}
-              onKeyDown={e => {
-                if (e.key === "ArrowDown") {
-                  e.preventDefault();
-                  setTagHighlightedIndex(prev => Math.min(prev + 1, tagSuggestions.length - 1));
-                } else if (e.key === "ArrowUp") {
-                  e.preventDefault();
-                  setTagHighlightedIndex(prev => Math.max(prev - 1, -1));
-                } else if (e.key === "Enter") {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const tag = tagHighlightedIndex >= 0
-                    ? tagSuggestions[tagHighlightedIndex]
-                    : tagSuggestions.length > 0 ? tagSuggestions[0] : null;
-                  if (tag) {
-                    setManualTagsToAdd(prev => [...prev, tag]);
-                    setTagSearchInput("");
-                    setTagHighlightedIndex(-1);
-                  } else {
-                    // No tag being selected — complete the scene
-                    onPage2Confirm(selectedActions, effectivePrimaryTagsToAdd);
-                  }
-                } else if (e.key === "Escape") {
-                  setTagSearchInput("");
-                  setTagHighlightedIndex(-1);
-                }
-              }}
+          <div className="mt-4">
+            <TagAutocomplete
+              key={tagSearchKey}
+              value=""
+              onChange={() => {}}
+              availableTags={allTags.filter(t =>
+                !t.name.endsWith("_AI") &&
+                !effectivePrimaryTagsToAdd.some(p => p.id === t.id)
+              )}
               placeholder="Search tags to add…"
-              className="w-full px-3 py-2 bg-gray-700 text-gray-100 border border-gray-600 rounded-sm text-sm placeholder-gray-400 focus:outline-none focus:border-teal-500"
+              className="w-full"
+              autoFocus={true}
+              onSave={(tagId) => {
+                if (!tagId) return;
+                const tag = allTags.find(t => t.id === tagId);
+                if (!tag) return;
+                setManualTagsToAdd(prev => [...prev, tag]);
+                setTagSearchKey(k => k + 1);
+              }}
+              onTagCreated={(tag) => {
+                setAllTags(prev => [...prev, tag]);
+                setManualTagsToAdd(prev => [...prev, tag]);
+                dispatch(addAvailableTag(tag));
+                setTagSearchKey(k => k + 1);
+              }}
             />
-            {tagSuggestions.length > 0 && (
-              <ul className="absolute z-10 w-full mt-1 bg-gray-700 border border-gray-600 rounded-sm shadow-lg max-h-48 overflow-y-auto">
-                {tagSuggestions.map((tag, index) => (
-                  <li key={tag.id}>
-                    <button
-                      onClick={() => {
-                        setManualTagsToAdd(prev => [...prev, tag]);
-                        setTagSearchInput("");
-                        setTagHighlightedIndex(-1);
-                      }}
-                      className={`w-full text-left px-3 py-2 text-sm text-gray-100 transition-colors font-mono ${index === tagHighlightedIndex ? "bg-blue-600" : "hover:bg-gray-600"}`}
-                    >
-                      {tag.name}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
 
           {effectivePrimaryTagsToAdd.length > 0 && (
