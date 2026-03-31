@@ -77,6 +77,7 @@ describe('undoMiddleware', () => {
         type: 'markerState',
         selectedMarkerId: 'marker-A',
         marker,
+        sourceAction: 'confirmMarker',
       });
     });
   });
@@ -93,7 +94,7 @@ describe('undoMiddleware', () => {
       });
 
       const snapshot = getUndoSnapshot();
-      expect(snapshot).toMatchObject({ type: 'markerState', marker });
+      expect(snapshot).toMatchObject({ type: 'markerState', marker, sourceAction: 'rejectMarker' });
     });
   });
 
@@ -109,7 +110,7 @@ describe('undoMiddleware', () => {
       });
 
       const snapshot = getUndoSnapshot();
-      expect(snapshot).toMatchObject({ type: 'markerState', marker });
+      expect(snapshot).toMatchObject({ type: 'markerState', marker, sourceAction: 'resetMarker' });
     });
   });
 
@@ -125,7 +126,7 @@ describe('undoMiddleware', () => {
       });
 
       const snapshot = getUndoSnapshot();
-      expect(snapshot).toMatchObject({ type: 'markerState', marker });
+      expect(snapshot).toMatchObject({ type: 'markerState', marker, sourceAction: 'updateMarkerTimes' });
     });
   });
 

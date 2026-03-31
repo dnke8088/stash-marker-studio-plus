@@ -502,21 +502,21 @@ export const undoLastAction = createAsyncThunk(
     clearUndoSnapshot(); // clear BEFORE dispatching so the reversal doesn't re-snapshot
 
     try {
-      // Determine which reversal to apply based on the snapshot's prior marker state
-      if (isMarkerConfirmed(marker)) {
-        // Was confirmed before the action — restore confirmation
-        await dispatch(confirmMarker({ sceneId, markerId: marker.id })).unwrap();
-      } else if (isMarkerRejected(marker)) {
-        // Was rejected before the action — restore rejection
-        await dispatch(rejectMarker({ sceneId, markerId: marker.id })).unwrap();
-      } else if (marker.seconds !== currentMarker.seconds || marker.end_seconds !== currentMarker.end_seconds) {
-        // Times changed — restore original times
+      // Dispatch the correct reversal based on what action was originally taken
+      if (snapshot.sourceAction === 'updateMarkerTimes') {
+        // Restore original times
         await dispatch(updateMarkerTimes({
           sceneId,
           markerId: marker.id,
           startTime: marker.seconds,
           endTime: marker.end_seconds ?? null,
         })).unwrap();
+      } else if (isMarkerConfirmed(marker)) {
+        // Was confirmed before the action — restore confirmation
+        await dispatch(confirmMarker({ sceneId, markerId: marker.id })).unwrap();
+      } else if (isMarkerRejected(marker)) {
+        // Was rejected before the action — restore rejection
+        await dispatch(rejectMarker({ sceneId, markerId: marker.id })).unwrap();
       } else {
         // Was unprocessed before — reset to unprocessed
         await dispatch(resetMarker({ sceneId, markerId: marker.id })).unwrap();

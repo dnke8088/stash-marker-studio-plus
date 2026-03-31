@@ -78,7 +78,7 @@ describe('KeyboardShortcutService', () => {
     });
 
     it('should update shortcut bindings', () => {
-      const newBindings: KeyBinding[] = [{ key: 'ctrl+z' }];
+      const newBindings: KeyBinding[] = [{ key: 'b' }];
       const success = service.updateShortcut('marker.confirm', newBindings);
       
       expect(success).toBe(true);

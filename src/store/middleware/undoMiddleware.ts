@@ -3,7 +3,7 @@ import type { SceneMarker } from '../../services/StashappService';
 
 export type UndoSnapshot =
   | { type: 'navigation'; previousSelectedMarkerId: string | null }
-  | { type: 'markerState'; selectedMarkerId: string | null; marker: SceneMarker };
+  | { type: 'markerState'; selectedMarkerId: string | null; marker: SceneMarker; sourceAction: 'confirmMarker' | 'rejectMarker' | 'resetMarker' | 'updateMarkerTimes' };
 
 // Module-level snapshot — transient, not persisted
 let snapshot: UndoSnapshot | null = null;
@@ -23,6 +23,13 @@ const MARKER_STATE_ACTIONS = new Set([
   'marker/resetMarker/pending',
   'marker/updateMarkerTimes/pending',
 ]);
+
+const SOURCE_ACTION_MAP: Record<string, 'confirmMarker' | 'rejectMarker' | 'resetMarker' | 'updateMarkerTimes'> = {
+  'marker/confirmMarker/pending': 'confirmMarker',
+  'marker/rejectMarker/pending': 'rejectMarker',
+  'marker/resetMarker/pending': 'resetMarker',
+  'marker/updateMarkerTimes/pending': 'updateMarkerTimes',
+};
 
 interface AppStateSlice {
   marker: {
@@ -55,6 +62,7 @@ export const undoMiddleware: Middleware<object, AppStateSlice> = (store) => (nex
           type: 'markerState',
           selectedMarkerId: state.marker.ui.selectedMarkerId,
           marker,
+          sourceAction: SOURCE_ACTION_MAP[actionType],
         };
       }
     }
