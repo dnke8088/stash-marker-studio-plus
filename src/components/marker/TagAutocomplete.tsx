@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { type Tag } from "../../services/StashappService";
+import { type Tag, stashappService } from "../../services/StashappService";
 
-interface TagAutocompleteProps {
+export interface TagAutocompleteProps {
   value: string;
   onChange: (tagId: string) => void;
   availableTags: Tag[];
@@ -12,6 +12,8 @@ interface TagAutocompleteProps {
   autoFocus?: boolean;
   onSave?: (tagId?: string) => void;
   onCancel?: () => void;
+  onTagCreated?: (tag: Tag) => void;
+  disabled?: boolean;
 }
 
 export function TagAutocomplete({
@@ -23,12 +25,15 @@ export function TagAutocomplete({
   autoFocus = false,
   onSave,
   onCancel,
+  onTagCreated,
+  disabled = false,
 }: TagAutocompleteProps) {
   const [inputValue, setInputValue] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [openUpward, setOpenUpward] = useState(false);
   const [shouldAutoOpen, setShouldAutoOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const initialClearDone = useRef(false);
@@ -83,6 +88,7 @@ export function TagAutocomplete({
     });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (disabled) return;
     const newValue = e.target.value;
     setInputValue(newValue);
     // Always open when user types
@@ -92,6 +98,7 @@ export function TagAutocomplete({
   };
 
   const handleInputFocus = () => {
+    if (disabled) return;
     // Only auto-open if shouldAutoOpen is true (set when autoFocus is used)
     if (shouldAutoOpen) {
       setIsOpen(true);
@@ -153,11 +160,30 @@ export function TagAutocomplete({
     }
   };
 
+  const handleCreateTag = async () => {
+    if (!inputValue.trim() || isCreating || !onTagCreated) return;
+
+    setIsCreating(true);
+    try {
+      const newTag = await stashappService.createTag(inputValue.trim());
+      onTagCreated(newTag);
+      handleSelectTag(newTag);
+    } catch (error) {
+      console.error("Failed to create tag:", error);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const showCreateOption = !!onTagCreated && filteredTags.length === 0 && !!inputValue.trim();
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
+      const totalOptions =
+        filteredTags.length + (showCreateOption ? 1 : 0);
       setSelectedIndex((prev) =>
-        prev < filteredTags.length - 1 ? prev + 1 : prev
+        prev < totalOptions - 1 ? prev + 1 : prev
       );
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
@@ -166,11 +192,13 @@ export function TagAutocomplete({
       e.preventDefault();
       if (selectedIndex >= 0 && selectedIndex < filteredTags.length) {
         handleSelectTag(filteredTags[selectedIndex]);
+      } else if (filteredTags.length > 0 && selectedIndex < filteredTags.length) {
+        handleSelectTag(filteredTags[0]);
+      } else if (showCreateOption && (selectedIndex === filteredTags.length || filteredTags.length === 0)) {
+        void handleCreateTag();
       } else if (filteredTags.length > 0) {
-        // Select the first matching tag if no specific selection
         handleSelectTag(filteredTags[0]);
       } else {
-        // No dropdown open / tag already selected — just save
         if (onSave) onSave();
       }
     } else if (e.key === "Escape") {
@@ -218,15 +246,16 @@ export function TagAutocomplete({
       <input
         ref={inputRef}
         type="text"
-        className="w-full bg-gray-700 text-white px-2 py-1 rounded-sm"
+        className={`w-full bg-gray-700 text-white px-2 py-1 rounded-sm ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
         value={inputValue}
         onChange={handleInputChange}
         onFocus={handleInputFocus}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         autoComplete="off"
+        disabled={disabled}
       />
-      {isOpen && filteredTags.length > 0 && (
+      {isOpen && (filteredTags.length > 0 || showCreateOption) && (
         <div
           ref={dropdownRef}
           className={`absolute z-50 w-full bg-gray-700 border border-gray-600 rounded-sm shadow-lg max-h-48 overflow-y-auto ${
@@ -245,9 +274,21 @@ export function TagAutocomplete({
               <div className="font-medium">{tag.name}</div>
             </div>
           ))}
+          {showCreateOption && (
+            <div
+              className={`px-3 py-2 cursor-pointer text-white border-t border-gray-600 ${
+                selectedIndex === filteredTags.length ? "bg-blue-600" : "hover:bg-gray-600"
+              } ${isCreating ? "opacity-50 cursor-not-allowed" : ""}`}
+              onClick={isCreating ? undefined : () => void handleCreateTag()}
+            >
+              <div className="font-medium text-green-400">
+                {isCreating ? "Creating..." : `Create "${inputValue}"`}
+              </div>
+            </div>
+          )}
         </div>
       )}
-      {isOpen && filteredTags.length === 0 && inputValue && (
+      {isOpen && filteredTags.length === 0 && inputValue && !showCreateOption && (
         <div
           ref={dropdownRef}
           className={`absolute z-50 w-full bg-gray-700 border border-gray-600 rounded-sm shadow-lg ${
