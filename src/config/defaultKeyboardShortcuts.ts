@@ -31,8 +31,8 @@ export const defaultShortcuts: KeyboardShortcut[] = [
   },
   {
     id: "marker.markIncorrect",
-    bindings: [{ key: "c" }],
-    description: "Mark/unmark marker as incorrect",
+    bindings: [{ key: "f" }],
+    description: "Reject and flag for AI feedback",
     category: "marker.review",
     action: { type: "function", functionName: "markIncorrect" },
     enabled: true,
@@ -40,7 +40,7 @@ export const defaultShortcuts: KeyboardShortcut[] = [
   },
   {
     id: "marker.openCollectionModal",
-    bindings: [{ key: "c", modifiers: { shift: true } }],
+    bindings: [{ key: "f", modifiers: { shift: true } }],
     description: "Open collection modal for incorrect markers",
     category: "system",
     action: {

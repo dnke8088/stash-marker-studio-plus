@@ -36,7 +36,7 @@ import {
   selectMarkerGroups,
   selectMarkerGroupTagSorting,
 } from "../../store/slices/configSlice";
-import { loadAvailableTags, loadMarkers, seekToTime, selectSceneId } from "../../store/slices/markerSlice";
+import { loadAvailableTags, loadMarkers, seekToTime, selectSceneId, selectIncorrectMarkers } from "../../store/slices/markerSlice";
 import { selectAllTags, loadAllTags } from "../../store/slices/searchSlice";
 import {
   groupMarkersByTags,
@@ -94,6 +94,8 @@ const Timeline = forwardRef<TimelineRef, TimelineProps>(
     const tagSorting = useAppSelector(selectMarkerGroupTagSorting);
     const allTags = useAppSelector(selectAllTags);
     const sceneId = useAppSelector(selectSceneId);
+    const incorrectMarkers = useAppSelector(selectIncorrectMarkers);
+    const incorrectMarkerIds = new Set(incorrectMarkers.map(m => m.markerId));
 
     // Swimlane resize state
     const [swimlaneMaxHeight, setSwimlaneMaxHeight] = useState<number | null>(
@@ -648,6 +650,7 @@ const Timeline = forwardRef<TimelineRef, TimelineProps>(
                 timelineWidth={timelineWidth.width}
                 currentTime={currentTime}
                 selectedMarkerId={selectedMarkerId}
+                incorrectMarkerIds={incorrectMarkerIds}
                 onMarkerClick={onMarkerClick}
               />
             </div>

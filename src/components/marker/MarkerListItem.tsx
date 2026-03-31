@@ -221,7 +221,7 @@ export function MarkerListItem({
           >
             <div className="flex items-center">
               {isMarkerRejected(marker) && incorrectMarkers.some(m => m.markerId === marker.id) && (
-                <span className="text-purple-400 mr-2" title="Reject and send AI feedback (C)">⚑</span>
+                <span className="text-purple-400 mr-2" title="Reject and flag for AI feedback (F)">⚑</span>
               )}
               {isMarkerRejected(marker) && !incorrectMarkers.some(m => m.markerId === marker.id) && (
                 <span className="text-red-500 mr-2">✗</span>

@@ -34,6 +34,8 @@ export interface TimelineGridProps {
   currentTime: number;
   /** Currently selected marker ID */
   selectedMarkerId: string | null;
+  /** Marker IDs flagged for AI feedback */
+  incorrectMarkerIds?: Set<string>;
   /** Callback when a marker is clicked */
   onMarkerClick: (marker: SceneMarker) => void;
 }
@@ -60,6 +62,7 @@ export const TimelineGrid: React.FC<TimelineGridProps> = ({
   timelineWidth,
   currentTime,
   selectedMarkerId,
+  incorrectMarkerIds,
   onMarkerClick,
 }) => {
   const [markerTooltip, setMarkerTooltip] = useState<{
@@ -171,6 +174,7 @@ export const TimelineGrid: React.FC<TimelineGridProps> = ({
                       left={0}
                       width={width}
                       isSelected={isSelected}
+                      isIncorrect={incorrectMarkerIds?.has(marker.id) ?? false}
                       onClick={onMarkerClick}
                     />
                   </div>

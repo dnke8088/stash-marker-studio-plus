@@ -18,17 +18,22 @@ export interface TimelineMarkerBarProps {
   left: number;
   width: number;
   isSelected: boolean;
+  isIncorrect?: boolean;
   onClick: (marker: SceneMarker) => void;
 }
 
 /**
  * Get marker color classes based on status
  */
-function getMarkerColorClasses(status: MarkerStatus, isSelected: boolean): string {
+function getMarkerColorClasses(status: MarkerStatus, isSelected: boolean, isIncorrect: boolean): string {
   let baseClasses = "transition-colors duration-150";
 
   if (isSelected) {
     baseClasses = `${baseClasses} ring-2 ring-white`;
+  }
+
+  if (isIncorrect) {
+    return `${baseClasses} bg-purple-600 hover:bg-purple-700`;
   }
 
   switch (status) {
@@ -48,10 +53,11 @@ export const TimelineMarkerBar: React.FC<TimelineMarkerBarProps> = ({
   left,
   width,
   isSelected,
+  isIncorrect = false,
   onClick,
 }) => {
   const status = getMarkerStatus(marker);
-  const colorClasses = getMarkerColorClasses(status, isSelected);
+  const colorClasses = getMarkerColorClasses(status, isSelected, isIncorrect);
 
   // Marker height is reduced from track height for visual clarity
   const MARKER_HEIGHT = 18; // TRACK_HEIGHT (24) - 6

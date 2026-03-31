@@ -78,7 +78,7 @@ export function MarkerSummary({
           </span>
         </div>
         {incorrectMarkersCount > 0 && (
-          <div className="flex items-center" title="Reject and send AI feedback (C)">
+          <div className="flex items-center" title="Reject and flag for AI feedback (F)">
             <span className="text-purple-400 mr-1">⚑</span>
             <span className="text-white">
               {incorrectMarkersCount}
