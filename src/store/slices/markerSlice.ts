@@ -784,6 +784,10 @@ const markerSlice = createSlice({
       state.availableTags = action.payload;
     },
 
+    addAvailableTag: (state, action: PayloadAction<Tag>) => {
+      state.availableTags.push(action.payload);
+    },
+
     // UI actions - selection
     setSelectedMarkerId: (state, action: PayloadAction<string | null>) => {
       // Note: Shot boundary marker filtering is now done in the component
@@ -1261,6 +1265,7 @@ export const {
   setMarkers,
   setScene,
   setAvailableTags,
+  addAvailableTag,
   setSelectedMarkerId,
   setEditingMarker,
   setCreatingMarker,
