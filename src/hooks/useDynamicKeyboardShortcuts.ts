@@ -175,11 +175,17 @@ export const useDynamicKeyboardShortcuts = (params: UseDynamicKeyboardShortcutsP
         const existingIncorrect = incorrectMarkers.find(m => m.markerId === currentMarker.id);
         
         if (existingIncorrect) {
-          // Remove from AI feedback collection and unreject the marker
+          // Remove from AI feedback collection and unreject the marker.
+          // Update incorrectMarkers in Redux AFTER the reset completes so the
+          // swimlane bar goes directly from purple to yellow without a red flash.
           incorrectMarkerStorage.removeIncorrectMarker(scene.id, currentMarker.id);
           const isAlreadyRejected = isMarkerRejected(currentMarker);
           if (isAlreadyRejected) {
-            dispatch(resetMarker({ sceneId: scene.id, markerId: currentMarker.id }));
+            dispatch(resetMarker({ sceneId: scene.id, markerId: currentMarker.id })).then(() => {
+              dispatch(setIncorrectMarkers(incorrectMarkerStorage.getIncorrectMarkers(scene.id)));
+            });
+          } else {
+            dispatch(setIncorrectMarkers(incorrectMarkerStorage.getIncorrectMarkers(scene.id)));
           }
         } else {
           // Add to AI feedback collection and reject the marker
@@ -196,10 +202,9 @@ export const useDynamicKeyboardShortcuts = (params: UseDynamicKeyboardShortcutsP
           if (!isAlreadyRejected) {
             dispatch(rejectMarker({ sceneId: scene.id, markerId: currentMarker.id }));
           }
+          // Update Redux state to reflect AI feedback collection changes
+          dispatch(setIncorrectMarkers(incorrectMarkerStorage.getIncorrectMarkers(scene.id)));
         }
-        
-        // Update Redux state to reflect AI feedback collection changes
-        dispatch(setIncorrectMarkers(incorrectMarkerStorage.getIncorrectMarkers(scene.id)));
       },
 
       'marker.openCollectionModal': () => {
