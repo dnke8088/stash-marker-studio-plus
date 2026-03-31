@@ -175,7 +175,8 @@ export function TagAutocomplete({
     }
   };
 
-  const showCreateOption = !!onTagCreated && filteredTags.length === 0 && !!inputValue.trim();
+  const exactMatch = filteredTags.some(t => t.name.toLowerCase() === inputValue.toLowerCase());
+  const showCreateOption = !!onTagCreated && !!inputValue.trim() && !exactMatch;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
@@ -275,7 +276,7 @@ export function TagAutocomplete({
           ))}
           {showCreateOption && (
             <div
-              className={`px-3 py-2 cursor-pointer text-white border-t border-gray-600 ${
+              className={`px-3 py-2 cursor-pointer text-white ${filteredTags.length > 0 ? "border-t border-gray-600" : ""} ${
                 selectedIndex === filteredTags.length ? "bg-blue-600" : "hover:bg-gray-600"
               } ${isCreating ? "opacity-50 cursor-not-allowed" : ""}`}
               onClick={isCreating ? undefined : () => void handleCreateTag()}
