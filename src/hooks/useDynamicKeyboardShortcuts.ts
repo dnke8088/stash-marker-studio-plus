@@ -15,6 +15,7 @@ import {
   playVideo,
   updateMarkerTimes,
   setIncorrectMarkers,
+  undoLastAction,
 } from '../store/slices/markerSlice';
 import { keyboardShortcutService } from '../services/KeyboardShortcutService';
 import { type SceneMarker, type Scene } from '../services/StashappService';
@@ -427,6 +428,10 @@ export const useDynamicKeyboardShortcuts = (params: UseDynamicKeyboardShortcutsP
           dispatch(setCreatingMarker(false));
           dispatch(setDuplicatingMarker(false));
         }
+      },
+
+      'system.undo': () => {
+        dispatch(undoLastAction({ showToast: params.showToast }));
       },
 
       'system.deleteRejected': () => {
