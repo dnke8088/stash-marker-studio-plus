@@ -27,6 +27,7 @@ interface MarkerPageHeaderProps {
   hasNextScene: boolean;
   onNextScene: () => void;
   onDeleteScene: () => void;
+  onShowShortcuts: () => void;
 }
 
 export function MarkerPageHeader({
@@ -46,6 +47,7 @@ export function MarkerPageHeader({
   hasNextScene,
   onNextScene,
   onDeleteScene,
+  onShowShortcuts,
 }: MarkerPageHeaderProps) {
   const router = useRouter();
   const stashUrl = useAppSelector(selectStashUrl);
@@ -115,15 +117,17 @@ export function MarkerPageHeader({
         <div className="flex items-center gap-3 min-w-0 flex-1">
         <div className="flex flex-col min-w-0 flex-1">
           {scene ? (
-            <a
-              href={`${stashUrl}/scenes/${scene.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="View in Stash"
-              className="text-lg font-bold truncate hover:text-blue-300 transition-colors underline decoration-gray-600 underline-offset-2"
-            >
-              {sceneTitle}
-            </a>
+            <h1 className="text-lg font-bold truncate">
+              <a
+                href={`${stashUrl}/scenes/${scene.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="View in Stash"
+                className="hover:text-blue-300 transition-colors underline decoration-gray-600 underline-offset-2"
+              >
+                {sceneTitle}
+              </a>
+            </h1>
           ) : (
             <h1 className="text-lg font-bold truncate">{sceneTitle}</h1>
           )}
@@ -160,6 +164,27 @@ export function MarkerPageHeader({
 
         {/* Right: action buttons + settings */}
         <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={onShowShortcuts}
+            className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-sm text-sm transition-colors flex items-center space-x-1"
+            title="Show keyboard shortcuts"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+              />
+            </svg>
+            <span>Shortcuts</span>
+          </button>
           {shotBoundaryEnabled && (
             <button
               onClick={onDetectShots}

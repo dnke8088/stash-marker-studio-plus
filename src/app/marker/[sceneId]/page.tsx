@@ -1181,6 +1181,7 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
         hasNextScene={nextSceneId !== null}
         onNextScene={handleNextScene}
         onDeleteScene={() => setIsDeleteSceneModalOpen(true)}
+        onShowShortcuts={() => dispatch(openKeyboardShortcutsModal())}
       />
 
       {error && (
@@ -1206,7 +1207,6 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
                   selectedMarkerId={selectedMarkerId}
                   onCreateMarker={handleCreateMarker}
                   onSplitMarker={() => splitCurrentMarker()}
-                  onShowShortcuts={() => dispatch(openKeyboardShortcutsModal())}
                   actionMarkers={actionMarkers}
                   createOrDuplicateMarker={createOrDuplicateMarker}
                 />
