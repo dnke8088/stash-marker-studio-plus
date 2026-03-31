@@ -63,9 +63,10 @@ export function VideoControls({ videoRef }: VideoControlsProps) {
     };
   }, [videoRef]);
 
-  const handleSeek = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      dispatch(seekToTime(parseFloat(e.target.value)));
+  const handleSeekCommit = useCallback(
+    (e: React.MouseEvent<HTMLInputElement> | React.TouchEvent<HTMLInputElement>) => {
+      dispatch(seekToTime(parseFloat((e.target as HTMLInputElement).value)));
+      (e.target as HTMLInputElement).blur();
     },
     [dispatch]
   );
@@ -131,8 +132,8 @@ export function VideoControls({ videoRef }: VideoControlsProps) {
         max={duration ?? 0}
         step={0.1}
         defaultValue={0}
-        onChange={handleSeek}
-        onMouseUp={(e) => e.currentTarget.blur()}
+        onMouseUp={handleSeekCommit}
+        onTouchEnd={handleSeekCommit}
         tabIndex={-1}
         className="flex-1 h-1 accent-blue-500 cursor-pointer"
       />
