@@ -12,6 +12,7 @@ interface MarkerSummaryStats {
 interface MarkerSummaryProps {
   markerSummary: MarkerSummaryStats;
   shotBoundariesCount: number;
+  incorrectMarkersCount: number;
   markers: SceneMarker[] | null;
   isCreatingMarker: boolean;
   isDuplicatingMarker: boolean;
@@ -26,6 +27,7 @@ interface MarkerSummaryProps {
 export function MarkerSummary({
   markerSummary,
   shotBoundariesCount,
+  incorrectMarkersCount,
   markers,
   isCreatingMarker,
   isDuplicatingMarker,
@@ -75,6 +77,14 @@ export function MarkerSummary({
             {markerSummary.rejected}
           </span>
         </div>
+        {incorrectMarkersCount > 0 && (
+          <div className="flex items-center" title="Reject and send AI feedback (C)">
+            <span className="text-purple-400 mr-1">⚑</span>
+            <span className="text-white">
+              {incorrectMarkersCount}
+            </span>
+          </div>
+        )}
         <div className="flex items-center">
           <span className="text-yellow-400 mr-1">?</span>
           <span className="text-white">

@@ -220,7 +220,10 @@ export function MarkerListItem({
             onClick={() => !isEditing && onMarkerClick(marker)}
           >
             <div className="flex items-center">
-              {isMarkerRejected(marker) && (
+              {isMarkerRejected(marker) && incorrectMarkers.some(m => m.markerId === marker.id) && (
+                <span className="text-purple-400 mr-2" title="Reject and send AI feedback (C)">⚑</span>
+              )}
+              {isMarkerRejected(marker) && !incorrectMarkers.some(m => m.markerId === marker.id) && (
                 <span className="text-red-500 mr-2">✗</span>
               )}
               {!isMarkerRejected(marker) && isMarkerConfirmed(marker) && (

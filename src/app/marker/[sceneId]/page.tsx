@@ -1199,6 +1199,7 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
                 <MarkerSummary
                   markerSummary={getMarkerSummary()}
                   shotBoundariesCount={getShotBoundaries().length}
+                  incorrectMarkersCount={incorrectMarkers.length}
                   markers={markers}
                   isCreatingMarker={isCreatingMarker}
                   isDuplicatingMarker={isDuplicatingMarker}
