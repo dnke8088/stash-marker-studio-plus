@@ -47,7 +47,12 @@ export function VideoPlayer({ videoRef, className = "" }: VideoPlayerProps) {
     if (pendingPlayPause && videoRef.current) {
       const video = videoRef.current;
       if (pendingPlayPause.action === "play") {
-        video.play().catch(console.error);
+        const doPlay = () => video.play().catch(console.error);
+        if (video.seeking) {
+          video.addEventListener("seeked", doPlay, { once: true });
+        } else {
+          doPlay();
+        }
       } else {
         video.pause();
       }
