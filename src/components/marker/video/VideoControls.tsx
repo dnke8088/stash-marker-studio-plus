@@ -5,7 +5,6 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   selectVideoDuration,
   selectVideoIsPlaying,
-  seekToTime,
   togglePlayPause,
 } from "@/store/slices/markerSlice";
 import { formatSeconds } from "@/core/marker/markerLogic";
@@ -65,10 +64,11 @@ export function VideoControls({ videoRef }: VideoControlsProps) {
 
   const handleSeekCommit = useCallback(
     (e: React.MouseEvent<HTMLInputElement> | React.TouchEvent<HTMLInputElement>) => {
-      dispatch(seekToTime(parseFloat((e.target as HTMLInputElement).value)));
+      const time = parseFloat((e.target as HTMLInputElement).value);
+      if (videoRef.current) videoRef.current.currentTime = time;
       (e.target as HTMLInputElement).blur();
     },
-    [dispatch]
+    [videoRef]
   );
 
   const handleVolumeChange = useCallback(

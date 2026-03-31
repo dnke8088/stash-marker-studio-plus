@@ -61,7 +61,6 @@ import {
   updateMarkerTag,
   updateMarkerTimes,
   deleteMarker,
-  seekToTime,
   setError
 } from "../../../store/slices/markerSlice";
 import { selectMarkerShotBoundary, selectMarkerAiReviewed, selectShotBoundaryConfig, selectShotBoundaryEnabled } from "../../../store/slices/configSlice";
@@ -647,10 +646,10 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
       (shot) => shot.seconds > currentVideoTime + 0.1
     );
 
-    if (nextShot) {
-      dispatch(seekToTime(nextShot.seconds));
+    if (nextShot && videoElementRef.current) {
+      videoElementRef.current.currentTime = nextShot.seconds;
     }
-  }, [getShotBoundaries, currentVideoTime, dispatch]);
+  }, [getShotBoundaries, currentVideoTime, videoElementRef]);
 
   const jumpToPreviousShot = useCallback(() => {
     const shotBoundaries = getShotBoundaries();
@@ -658,10 +657,10 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
       .reverse()
       .find((shot) => shot.seconds < currentVideoTime - 0.1);
 
-    if (previousShot) {
-      dispatch(seekToTime(previousShot.seconds));
+    if (previousShot && videoElementRef.current) {
+      videoElementRef.current.currentTime = previousShot.seconds;
     }
-  }, [getShotBoundaries, currentVideoTime, dispatch]);
+  }, [getShotBoundaries, currentVideoTime, videoElementRef]);
 
   // Copy marker properties for merging
   const copyMarkerForMerge = useCallback(() => {

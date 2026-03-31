@@ -11,7 +11,6 @@ import {
   setDuplicatingMarker,
   setMarkers,
   setSelectedMarkerId,
-  seekToTime,
   playVideo,
   updateMarkerTimes,
   setIncorrectMarkers,
@@ -85,6 +84,11 @@ interface UseDynamicKeyboardShortcutsParams {
 export const useDynamicKeyboardShortcuts = (params: UseDynamicKeyboardShortcutsParams) => {
   const dispatch = useAppDispatch();
   const config = useConfig();
+
+  const seekVideo = useCallback((time: number) => {
+    const video = params.videoElementRef.current;
+    if (video) video.currentTime = time;
+  }, [params.videoElementRef]);
 
   // Helper function to get frame rate from scene, with fallback to 30fps
   const getFrameRate = useCallback((scene: Scene | null): number => {
@@ -321,32 +325,32 @@ export const useDynamicKeyboardShortcuts = (params: UseDynamicKeyboardShortcutsP
       // Time-based seeking with configurable intervals
       'video.seekSmallBackward': () => {
         const videoConfig = getVideoConfig();
-        dispatch(seekToTime(Math.max(0, currentVideoTime - videoConfig.smallSeekTime)));
+        seekVideo(Math.max(0, currentVideoTime - videoConfig.smallSeekTime));
       },
 
       'video.seekSmallForward': () => {
         const videoConfig = getVideoConfig();
-        dispatch(seekToTime(Math.min(videoDuration || Infinity, currentVideoTime + videoConfig.smallSeekTime)));
+        seekVideo(Math.min(videoDuration || Infinity, currentVideoTime + videoConfig.smallSeekTime));
       },
 
       'video.seekMediumBackward': () => {
         const videoConfig = getVideoConfig();
-        dispatch(seekToTime(Math.max(0, currentVideoTime - videoConfig.mediumSeekTime)));
+        seekVideo(Math.max(0, currentVideoTime - videoConfig.mediumSeekTime));
       },
 
       'video.seekMediumForward': () => {
         const videoConfig = getVideoConfig();
-        dispatch(seekToTime(Math.min(videoDuration || Infinity, currentVideoTime + videoConfig.mediumSeekTime)));
+        seekVideo(Math.min(videoDuration || Infinity, currentVideoTime + videoConfig.mediumSeekTime));
       },
 
       'video.seekLongBackward': () => {
         const videoConfig = getVideoConfig();
-        dispatch(seekToTime(Math.max(0, currentVideoTime - videoConfig.longSeekTime)));
+        seekVideo(Math.max(0, currentVideoTime - videoConfig.longSeekTime));
       },
 
       'video.seekLongForward': () => {
         const videoConfig = getVideoConfig();
-        dispatch(seekToTime(Math.min(videoDuration || Infinity, currentVideoTime + videoConfig.longSeekTime)));
+        seekVideo(Math.min(videoDuration || Infinity, currentVideoTime + videoConfig.longSeekTime));
       },
 
       // Frame-based stepping with configurable frame counts
@@ -354,67 +358,67 @@ export const useDynamicKeyboardShortcuts = (params: UseDynamicKeyboardShortcutsP
         const frameRate = getFrameRate(scene);
         const videoConfig = getVideoConfig();
         const frameTime = videoConfig.smallFrameStep / frameRate;
-        dispatch(seekToTime(Math.max(0, currentVideoTime - frameTime)));
+        seekVideo(Math.max(0, currentVideoTime - frameTime));
       },
 
       'video.frameSmallForward': () => {
         const frameRate = getFrameRate(scene);
         const videoConfig = getVideoConfig();
         const frameTime = videoConfig.smallFrameStep / frameRate;
-        dispatch(seekToTime(Math.min(videoDuration || Infinity, currentVideoTime + frameTime)));
+        seekVideo(Math.min(videoDuration || Infinity, currentVideoTime + frameTime));
       },
 
       'video.frameMediumBackward': () => {
         const frameRate = getFrameRate(scene);
         const videoConfig = getVideoConfig();
         const frameTime = videoConfig.mediumFrameStep / frameRate;
-        dispatch(seekToTime(Math.max(0, currentVideoTime - frameTime)));
+        seekVideo(Math.max(0, currentVideoTime - frameTime));
       },
 
       'video.frameMediumForward': () => {
         const frameRate = getFrameRate(scene);
         const videoConfig = getVideoConfig();
         const frameTime = videoConfig.mediumFrameStep / frameRate;
-        dispatch(seekToTime(Math.min(videoDuration || Infinity, currentVideoTime + frameTime)));
+        seekVideo(Math.min(videoDuration || Infinity, currentVideoTime + frameTime));
       },
 
       'video.frameLongBackward': () => {
         const frameRate = getFrameRate(scene);
         const videoConfig = getVideoConfig();
         const frameTime = videoConfig.longFrameStep / frameRate;
-        dispatch(seekToTime(Math.max(0, currentVideoTime - frameTime)));
+        seekVideo(Math.max(0, currentVideoTime - frameTime));
       },
 
       'video.frameLongForward': () => {
         const frameRate = getFrameRate(scene);
         const videoConfig = getVideoConfig();
         const frameTime = videoConfig.longFrameStep / frameRate;
-        dispatch(seekToTime(Math.min(videoDuration || Infinity, currentVideoTime + frameTime)));
+        seekVideo(Math.min(videoDuration || Infinity, currentVideoTime + frameTime));
       },
 
       'video.playFromMarker': () => {
         if (!currentMarker) return;
-        dispatch(seekToTime(currentMarker.seconds));
+        seekVideo(currentMarker.seconds);
         dispatch(playVideo());
       },
 
       // Video Jump Navigation
       'video.jumpToMarkerStart': () => {
         if (!currentMarker) return;
-        dispatch(seekToTime(currentMarker.seconds));
+        seekVideo(currentMarker.seconds);
       },
 
       'video.jumpToSceneStart': () => {
-        dispatch(seekToTime(0));
+        seekVideo(0);
       },
 
       'video.jumpToMarkerEnd': () => {
         if (!currentMarker) return;
-        dispatch(seekToTime(currentMarker.end_seconds || currentMarker.seconds));
+        seekVideo(currentMarker.end_seconds || currentMarker.seconds);
       },
 
       'video.jumpToSceneEnd': () => {
-        if (videoDuration) dispatch(seekToTime(videoDuration));
+        if (videoDuration) seekVideo(videoDuration);
       },
 
       'video.jumpToPreviousShot': () => jumpToPreviousShot(),
@@ -462,7 +466,7 @@ export const useDynamicKeyboardShortcuts = (params: UseDynamicKeyboardShortcutsP
         }
       },
     };
-  }, [dispatch, getFrameRate, getVideoConfig, params]);
+  }, [dispatch, getFrameRate, getVideoConfig, params, seekVideo]);
 
   // Main keyboard handler
   const handleKeyDown = useCallback(
