@@ -12,6 +12,7 @@ interface TempMarkerFormProps {
   onSave: (start: number, end: number | null, tagId: string) => void;
   onCancel: () => void;
   isDuplicate?: boolean;
+  onTagCreated?: (tag: Tag) => void;
 }
 
 export function TempMarkerForm({
@@ -21,6 +22,7 @@ export function TempMarkerForm({
   onSave,
   onCancel,
   isDuplicate = false,
+  onTagCreated,
 }: TempMarkerFormProps) {
   const [start, setStart] = useState(formatTimeColonDot(marker.seconds));
   const [end, setEnd] = useState(
@@ -112,6 +114,7 @@ export function TempMarkerForm({
               );
             }
           }}
+          onTagCreated={onTagCreated}
         />
         <button
           className="bg-green-500 hover:bg-green-700 text-white px-2 py-1 rounded-sm text-xs"
