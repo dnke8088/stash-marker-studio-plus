@@ -96,7 +96,7 @@ export function VideoControls({ videoRef }: VideoControlsProps) {
   }, [dispatch]);
 
   return (
-    <div className="flex items-center gap-2 bg-gray-800 px-3 py-1.5">
+    <div className="flex items-center gap-3 bg-gray-800 px-4 py-2">
       {/* Play/pause */}
       <button
         onClick={handlePlayPause}
@@ -104,7 +104,7 @@ export function VideoControls({ videoRef }: VideoControlsProps) {
         className="text-white hover:text-blue-400 transition-colors flex-shrink-0"
       >
         {isPlaying ? (
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
               d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z"
@@ -112,7 +112,7 @@ export function VideoControls({ videoRef }: VideoControlsProps) {
             />
           </svg>
         ) : (
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
               d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
@@ -152,7 +152,7 @@ export function VideoControls({ videoRef }: VideoControlsProps) {
         className="text-white hover:text-blue-400 transition-colors flex-shrink-0"
       >
         {muted || volume === 0 ? (
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
               d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
@@ -160,7 +160,7 @@ export function VideoControls({ videoRef }: VideoControlsProps) {
             />
           </svg>
         ) : (
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
               d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.22 5.22a.75.75 0 011.06 0c.98.98 1.594 2.327 1.594 3.78s-.615 2.8-1.594 3.78a.75.75 0 11-1.06-1.06A3.502 3.502 0 0013.874 9a3.502 3.502 0 00-1.654-2.72.75.75 0 010-1.06z"
