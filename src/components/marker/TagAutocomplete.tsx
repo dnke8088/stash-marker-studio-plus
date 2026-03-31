@@ -192,9 +192,8 @@ export function TagAutocomplete({
       e.preventDefault();
       if (selectedIndex >= 0 && selectedIndex < filteredTags.length) {
         handleSelectTag(filteredTags[selectedIndex]);
-      } else if (filteredTags.length > 0 && selectedIndex < filteredTags.length) {
-        handleSelectTag(filteredTags[0]);
-      } else if (showCreateOption && (selectedIndex === filteredTags.length || filteredTags.length === 0)) {
+      } else if (showCreateOption) {
+        // No matching tag and create option is active — Enter creates the tag
         void handleCreateTag();
       } else if (filteredTags.length > 0) {
         handleSelectTag(filteredTags[0]);
