@@ -63,8 +63,7 @@ import {
   deleteMarker,
   setError
 } from "../../../store/slices/markerSlice";
-import { selectMarkerShotBoundary, selectMarkerAiReviewed, selectShotBoundaryConfig, selectShotBoundaryEnabled, selectStashUrl, selectStashApiKey } from "../../../store/slices/configSlice";
-import { useHlsPreloader } from "../../../hooks/useHlsPreloader";
+import { selectMarkerShotBoundary, selectMarkerAiReviewed, selectShotBoundaryConfig, selectShotBoundaryEnabled } from "../../../store/slices/configSlice";
 import Toast from "../../components/Toast";
 import { useRouter } from "next/navigation";
 import { incorrectMarkerStorage } from "@/utils/incorrectMarkerStorage";
@@ -114,9 +113,6 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
   const completionModalData = useAppSelector(selectCompletionModalData);
   const isCompletionModalOpen = useAppSelector(selectIsCompletionModalOpen);
   
-  const stashUrl = useAppSelector(selectStashUrl);
-  const stashApiKey = useAppSelector(selectStashApiKey);
-
   const markerListRef = useRef<HTMLDivElement>(null);
   // Ref passed to VideoPlayer and VideoControls for direct video element access
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
@@ -257,16 +253,6 @@ export default function MarkerPage({ params }: { params: Promise<{ sceneId: stri
     return filteredMarkers;
   }, [markers]);
 
-
-  // Preload HLS segments at the selected marker's position so seeks are instant
-  const selectedMarkerSeconds = useMemo(
-    () => actionMarkers.find((m) => m.id === selectedMarkerId)?.seconds ?? null,
-    [actionMarkers, selectedMarkerId]
-  );
-  const preloadUrl = scene && stashUrl
-    ? `${stashUrl}/scene/${scene.id}/stream.m3u8${stashApiKey ? `?apikey=${stashApiKey}` : ""}`
-    : null;
-  useHlsPreloader({ url: preloadUrl, targetTime: selectedMarkerSeconds });
 
   // Marker operations functionality
   const {
