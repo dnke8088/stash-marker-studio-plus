@@ -396,7 +396,7 @@ export function CompletionModal({
                 })}
               </div>
               {tagsToRemove.some(t => getCorrespondingName(t)) && (
-                <p className="mt-2 text-xs text-red-400/70">Click a tag to add its real counterpart to the scene instead.</p>
+                <p className="mt-2 text-xs text-red-400/70">Click a tag to add its non-AI counterpart to the scene.</p>
               )}
             </div>
           )}
