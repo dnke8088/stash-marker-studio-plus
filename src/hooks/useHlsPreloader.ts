@@ -8,20 +8,17 @@ interface UseHlsPreloaderParams {
   targetTime: number | null;
 }
 
-// Delay before starting preload — lets the user finish navigating before
-// we start fetching, and avoids competing with the main player on rapid keypress
-const PRELOAD_DELAY_MS = 500;
-
 export function useHlsPreloader({ url, targetTime }: UseHlsPreloaderParams) {
   const hlsRef = useRef<Hls | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Create the hidden video element once on mount
   useEffect(() => {
-    if (!Hls.isSupported()) return;
+    if (!Hls.isSupported()) return; // Safari uses native HLS; skip
 
     const video = document.createElement("video");
     video.muted = true;
+    video.preload = "auto";
     video.style.cssText = "display:none;position:absolute;pointer-events:none";
     video.setAttribute("aria-hidden", "true");
     document.body.appendChild(video);
@@ -35,38 +32,34 @@ export function useHlsPreloader({ url, targetTime }: UseHlsPreloaderParams) {
     };
   }, []);
 
-  // When url or targetTime changes, debounce then start preloading
+  // When url or targetTime changes, seek the preloader to the new position
   useEffect(() => {
     if (!Hls.isSupported() || !url || targetTime === null) return;
     const video = videoRef.current;
     if (!video) return;
 
-    const timer = setTimeout(() => {
-      hlsRef.current?.destroy();
-      hlsRef.current = null;
+    hlsRef.current?.destroy();
 
-      const hls = new Hls({
-        autoStartLoad: false,
-        maxBufferLength: 12,
-        maxMaxBufferLength: 12,
-        startPosition: targetTime,
-        debug: false,
-      });
+    const hls = new Hls({
+      autoStartLoad: false,
+      maxBufferLength: 12,
+      maxMaxBufferLength: 12,
+      startPosition: targetTime,
+      debug: false,
+    });
 
-      hls.loadSource(url);
-      hls.attachMedia(video);
+    hls.loadSource(url);
+    hls.attachMedia(video);
 
-      hls.once(Hls.Events.MANIFEST_PARSED, () => {
-        video.currentTime = targetTime;
-        hls.startLoad(targetTime);
-      });
+    hls.once(Hls.Events.MANIFEST_PARSED, () => {
+      video.currentTime = targetTime;
+      hls.startLoad(targetTime);
+    });
 
-      hlsRef.current = hls;
-    }, PRELOAD_DELAY_MS);
+    hlsRef.current = hls;
 
     return () => {
-      clearTimeout(timer);
-      hlsRef.current?.destroy();
+      hls.destroy();
       hlsRef.current = null;
     };
   }, [url, targetTime]);
