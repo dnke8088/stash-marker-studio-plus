@@ -167,10 +167,20 @@ export function CompletionModal({
     return () => document.removeEventListener("keydown", handleKeyDown, true);
   }, [isOpen, currentPage, page2Data, manualTagsToAdd, selectedActions, handlePage1Next, onPage2Confirm, onCancel]);
 
-  const handleRemoveTagClick = (tag: Tag) => {
+  const getCorrespondingName = (tag: Tag): string | null => {
     const desc = tag.description ?? "";
-    if (!desc.toLowerCase().includes("corresponding tag:")) return;
-    const correspondingName = desc.split(/corresponding tag:/i)[1].split(/[\n\r]/)[0].trim();
+    if (desc.toLowerCase().includes("corresponding tag:")) {
+      return desc.split(/corresponding tag:/i)[1].split(/[\n\r]/)[0].trim() || null;
+    }
+    // Fall back to stripping _AI suffix
+    if (tag.name.endsWith("_AI")) {
+      return tag.name.slice(0, -3);
+    }
+    return null;
+  };
+
+  const handleRemoveTagClick = (tag: Tag) => {
+    const correspondingName = getCorrespondingName(tag);
     if (!correspondingName) return;
 
     const currentPrimaryTagsToAdd = page2Data?.primaryTagsToAdd ?? [];
@@ -370,14 +380,14 @@ export function CompletionModal({
               <h4 className="font-semibold text-red-200 mb-2">🗑️ Tags to be removed from the scene:</h4>
               <div className="flex flex-wrap gap-2">
                 {tagsToRemove.map((tag) => {
-                  const hasCorresponding = (tag.description ?? "").toLowerCase().includes("corresponding tag:");
+                  const correspondingName = getCorrespondingName(tag);
                   return (
                     <button
                       key={`remove-${tag.id}`}
                       onClick={() => handleRemoveTagClick(tag)}
-                      title={hasCorresponding ? "Click to add corresponding tag to scene" : undefined}
+                      title={correspondingName ? `Click to add ${correspondingName} to scene` : undefined}
                       className={`px-2 py-1 bg-red-800/50 text-red-200 rounded-sm text-xs font-mono transition-colors ${
-                        hasCorresponding ? "hover:bg-red-700/70 cursor-pointer" : "cursor-default"
+                        correspondingName ? "hover:bg-red-700/70 cursor-pointer" : "cursor-default"
                       }`}
                     >
                       {tag.name}
