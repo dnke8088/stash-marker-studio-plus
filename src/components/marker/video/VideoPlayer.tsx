@@ -11,6 +11,7 @@ import {
   setVideoPlaying,
   clearPendingSeek,
   clearPendingPlayPause,
+  togglePlayPause,
 } from "@/store/slices/markerSlice";
 import { selectStashUrl, selectStashApiKey } from "@/store/slices/configSlice";
 import Hls from "hls.js";
@@ -123,7 +124,8 @@ export function VideoPlayer({ videoRef, className = "" }: VideoPlayerProps) {
   return (
     <video
       ref={videoRef}
-      className={`w-full h-full object-contain ${className}`}
+      onClick={() => dispatch(togglePlayPause())}
+      className={`w-full h-full object-contain cursor-pointer ${className}`}
       tabIndex={-1}
     >
       Your browser does not support the video tag.
