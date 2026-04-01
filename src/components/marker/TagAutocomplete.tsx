@@ -166,6 +166,10 @@ export function TagAutocomplete({
     setIsCreating(true);
     try {
       const newTag = await stashappService.createTag(inputValue.trim());
+      if (!newTag?.id) {
+        console.error("Tag creation returned no id — Stash may have rejected the tag");
+        return;
+      }
       onTagCreated(newTag);
       handleSelectTag(newTag);
     } catch (error) {
