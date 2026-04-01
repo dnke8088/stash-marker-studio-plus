@@ -170,7 +170,7 @@ export function CompletionModal({
   const handleRemoveTagClick = (tag: Tag) => {
     const desc = tag.description ?? "";
     if (!desc.toLowerCase().includes("corresponding tag:")) return;
-    const correspondingName = desc.split(/corresponding tag:/i)[1].trim();
+    const correspondingName = desc.split(/corresponding tag:/i)[1].split(/[\n\r]/)[0].trim();
     if (!correspondingName) return;
 
     const currentPrimaryTagsToAdd = page2Data?.primaryTagsToAdd ?? [];

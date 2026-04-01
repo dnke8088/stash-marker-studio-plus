@@ -23,6 +23,7 @@ function getCorrespondingTagName(tag: Tag): string | null {
   
   const correspondingTagName = tag.description
     .split("Corresponding Tag: ")[1]
+    .split(/[\n\r]/)[0]
     .trim();
     
   return correspondingTagName || null;

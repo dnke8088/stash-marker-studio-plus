@@ -1030,6 +1030,7 @@ export class StashappService {
       if (tag.description?.includes("Corresponding Tag: ")) {
         const correspondingTagName = tag.description
           .split("Corresponding Tag: ")[1]
+          .split(/[\n\r]/)[0]
           .trim();
 
         const correspondingTag = allTags.findTags.tags.find(
